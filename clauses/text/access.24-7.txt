@@ -1,0 +1,7 @@
+Section {{sectionMap.access}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+ACCESS. {{TenantTitle}} and its employees, agents, contractors and subcontractors shall have access to the {{AreaName}} twenty-four (24) hours per day, seven (7) days per week, without prior notice, escort or appointment, and at no additional charge, for the installation, operation, maintenance, repair, replacement and removal of the {{EquipmentName}} and any utilities serving it.
+
+{{LandlordTitle}} shall provide {{TenantTitle}} with all keys, codes, credentials and other means of access necessary for that purpose, and shall promptly provide replacements whenever the means of access is changed.
+
+If {{LandlordTitle}} fails to provide access as required by this paragraph, {{TenantTitle}} may take such steps as are reasonably necessary to obtain access and may deduct the reasonable cost from the {{RentName}} next becoming due.

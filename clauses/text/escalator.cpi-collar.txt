@@ -1,0 +1,7 @@
+Section {{sectionMap.rent}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+ESCALATION. Commencing on the first anniversary of {{Extension_Term_Start_Date}} and on each anniversary thereafter, the {{RentName}} shall increase by the percentage increase in the Consumer Price Index for All Urban Consumers, U.S. City Average, All Items, published by the United States Bureau of Labor Statistics, measured over the twelve (12) month period ending three (3) months before the anniversary.
+
+The increase in any year shall be not less than the floor and not more than the cap stated in this Amendment. If the index is discontinued or its basis materially changed, the parties shall substitute the successor index published by the same agency, and if none is published, a comparable measure of consumer prices agreed between them.
+
+In no event shall the {{RentName}} decrease below the amount payable during the preceding period.

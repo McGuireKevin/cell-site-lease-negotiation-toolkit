@@ -1,0 +1,23 @@
+# Normalise line endings in the repository to LF.
+#
+# Without this, Git's autocrlf on Windows rewrites every text file on checkout
+# and the whole tree shows as modified on another machine — which buries real
+# changes in noise. Especially unhelpful for clause text, where the diff IS the
+# review.
+* text=auto eol=lf
+
+# Explicitly binary: never diffed, never line-ending converted.
+*.xlsx binary
+*.xlsm binary
+*.docx binary
+*.pdf  binary
+*.png  binary
+
+# Clause prose is the reviewable artefact. Mark it as text so a diff is a diff.
+*.txt  text
+*.csv  text
+*.json text
+*.md   text
+*.js   text
+*.html text
+*.ps1  text

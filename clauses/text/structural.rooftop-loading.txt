@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+STRUCTURAL LOADING. Before installing or materially modifying the {{EquipmentName}} on the {{AreaName}}, {{TenantTitle}} will, at its cost, obtain a structural analysis prepared by a licensed structural engineer confirming that the building frame is capable of supporting the resulting loads, and will provide a copy to {{LandlordTitle}}.
+
+{{LandlordTitle}} will not unreasonably withhold, condition or delay approval of an installation supported by such an analysis. {{LandlordTitle}} will be deemed to have approved an installation if it does not object in writing, stating a specific structural basis for the objection, within thirty (30) days of receiving the analysis.
+
+{{LandlordTitle}} will not permit any other occupant to install equipment that would reduce the structural capacity available to {{TenantTitle}} below that confirmed by the analysis.

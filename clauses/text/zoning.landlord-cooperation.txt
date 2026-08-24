@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+ZONING AND PERMITTING COOPERATION. {{LandlordTitle}} will cooperate with {{TenantTitle}}, at no cost to {{LandlordTitle}}, in obtaining any permit, licence, variance, zoning approval or other governmental authorisation required for {{TenantTitle}}'s use of the {{AreaName}}, including executing any application, consent or authorisation reasonably required to be signed by the owner of the {{PropertyName}}, within fifteen (15) business days of request.
+
+{{LandlordTitle}} will not oppose, and will not directly or indirectly support any opposition to, any such application, whether at a public hearing or otherwise.
+
+{{LandlordTitle}} further grants {{TenantTitle}} the right to enter the {{PropertyName}} to conduct surveys, soil borings, structural analyses, radio frequency testing, title review and environmental assessments reasonably necessary to support such an application.

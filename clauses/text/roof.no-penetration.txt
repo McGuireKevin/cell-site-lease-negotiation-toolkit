@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+NON-PENETRATING INSTALLATION. {{TenantTitle}}'s installation on the {{AreaName}} will be made using non-penetrating, ballasted or free-standing mounts, and will not penetrate the roof membrane, except where a penetration is expressly approved in writing by {{LandlordTitle}} in advance.
+
+{{TenantTitle}} will place protective pads, walkway pads or sleepers beneath all mounts and cable runs as reasonably required to protect the roof surface. Ballast will be distributed in accordance with the structural analysis obtained for the installation.

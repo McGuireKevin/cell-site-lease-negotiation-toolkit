@@ -1,0 +1,65 @@
+SYNTHETIC TEST DOCUMENT — NOT A REAL LEASE. See README.md in this folder.
+
+NOTE FOR THE AUDIT: this document also titles itself "First Amendment". It is
+chronologically the SECOND amendment. Deliberate.
+
+ALSO: page 2 of this document is marked as a degraded scan. The escalation
+provision in Section 2 is legible; the notice period in Section 3 is not fully
+legible and should be recorded with low confidence rather than guessed.
+
+================================================================================
+
+              FIRST AMENDMENT TO COMMUNICATIONS SITE LEASE AGREEMENT
+
+THIS FIRST AMENDMENT is dated March 30, 2016, by and between PLACEHOLDER
+HOLDINGS LLC ("Lessor") and SAMPLE WIRELESS INC. ("Lessee").
+
+WHEREAS, the parties entered into a Communications Site Lease Agreement dated
+May 1, 2006, as amended by a First Amendment dated September 15, 2011
+(collectively, the "Agreement");
+
+NOW THEREFORE the parties agree as follows:
+
+1.  TERM.
+
+    The Agreement is amended to provide that, in addition to the Extension Terms
+    remaining under Section 2(b), Lessee shall have two (2) further options to
+    extend, each of five (5) years, on the same terms.
+
+2.  ESCALATION.
+
+    Section 3(b) of the Agreement is deleted in its entirety and replaced with
+    the following:
+
+        "The Lease Fee shall not increase on the anniversary of the
+        Commencement Date. Commencing May 1, 2016 and at the commencement of
+        each Extension Term thereafter, the Lease Fee shall increase by ten
+        percent (10%) over the Lease Fee payable during the immediately
+        preceding Extension Term."
+
+    The final adjustment under the superseded Section 3(b) was the adjustment
+    made on May 1, 2015.
+
+--------------------------------------------------------------------------------
+[PAGE 2 — DEGRADED SCAN. Text below is partly illegible; portions marked [?].]
+--------------------------------------------------------------------------------
+
+3.  NOTICE OF EXERCISE.
+
+    Section 2(b) is amended to provide that notice of election to extend shall
+    be given not less than [?] days prior to the expiration of the then-current
+    term. [remainder of paragraph illegible]
+
+4.  SUBLETTING.
+
+    Section 7 is amended to provide that Lessor's consent to a sublease shall
+    not be unreasonably withheld, conditioned or delayed. [The standard for
+    assignment is not addressed and the sentence that follows is illegible.]
+
+5.  OTHER TERMS.
+
+    Except as amended herein, the Agreement remains in full force and effect.
+
+LESSOR: PLACEHOLDER HOLDINGS LLC          LESSEE: SAMPLE WIRELESS INC.
+
+By: ______________________                By: ______________________

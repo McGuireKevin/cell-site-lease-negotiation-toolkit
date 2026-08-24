@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+NO INTERFERENCE BY {{TenantTitle}}. {{TenantTitle}} will operate the {{EquipmentName}} in compliance with applicable Federal Communications Commission regulations and will not cause material interference with communications equipment lawfully installed and operating as of the date of this Amendment and identified in writing to {{TenantTitle}} by {{LandlordTitle}}.
+
+This obligation does not extend to equipment installed after the date of this Amendment, and nothing in this paragraph requires {{TenantTitle}} to reduce power, alter frequencies, or otherwise degrade its operations to accommodate any subsequently installed equipment.

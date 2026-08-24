@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+MODIFICATION OF THE {{EquipmentName}}. {{TenantTitle}} may, at any time and without the prior consent of {{LandlordTitle}}, add to, modify, replace, upgrade or remove any part of the {{EquipmentName}}, including antennas, radios, cabling and supporting structures, provided the work complies with applicable law and does not exceed the structural capacity of the {{PropertyName}}.
+
+Where {{LandlordTitle}} reasonably questions structural capacity, {{TenantTitle}} shall provide a structural analysis prepared by a licensed engineer at {{TenantTitle}}'s cost, and {{LandlordTitle}} shall respond within fifteen (15) business days of receipt. Failure to respond within that period shall constitute approval.
+
+No additional {{RentName}}, fee or other charge shall become payable by reason of a modification permitted under this paragraph.

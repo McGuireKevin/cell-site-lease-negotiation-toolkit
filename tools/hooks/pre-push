@@ -1,0 +1,140 @@
+#!/bin/sh
+#
+# pre-push -- the last gate before a push becomes irreversible.
+#
+# Everything else in this repository is a check you can rerun. This one has to
+# be right the first time: a public push cannot be retracted. GitHub caches
+# commits, forks retain them, and the API can serve orphaned objects long after
+# a force-push. Rewriting history does not unpublish a file.
+#
+# Install (once per clone):
+#
+#     git config core.hooksPath tools/hooks
+#
+# Two gates, cheapest first:
+#
+#   1. CONFIDENTIALITY -- no denied format and no real deal file in ANY commit
+#      being pushed. Deliberately not just the tip: a file deleted before the
+#      final commit is still public once an earlier commit carrying it is
+#      pushed. That is the exact mistake this repository already had to undo.
+#
+#   2. CORRECTNESS -- the four repository checks.
+#
+# --no-verify skips both. Only use it if you have read what you are skipping.
+
+set -u
+
+ZERO=0000000000000000000000000000000000000000
+failed=0
+
+say()  { printf '%s\n' "$*"; }
+bad()  { printf '  FAIL  %s\n' "$*"; failed=1; }
+ok()   { printf '  ok    %s\n' "$*"; }
+
+say ""
+say "pre-push: checking what is about to become public"
+say ""
+
+# ---------------------------------------------------------------------------
+# Collect every path in every commit being pushed.
+# ---------------------------------------------------------------------------
+paths=""
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+    [ "$local_sha" = "$ZERO" ] && continue        # branch deletion: nothing to inspect
+
+    if [ "$remote_sha" = "$ZERO" ]; then
+        range="$local_sha"                        # new branch: everything reachable
+    else
+        range="$remote_sha..$local_sha"           # existing branch: only what is new
+    fi
+
+    found=$(git rev-list --objects $range 2>/dev/null \
+            | awk 'NF > 1 { $1 = ""; sub(/^ /, ""); print }')
+    paths=$(printf '%s\n%s' "$paths" "$found")
+done
+
+paths=$(printf '%s\n' "$paths" | grep -v '^$' | sort -u)
+
+if [ -z "$paths" ]; then
+    say "  nothing to push"
+    say ""
+    exit 0
+fi
+
+count=$(printf '%s\n' "$paths" | wc -l | tr -d ' ')
+
+# ---------------------------------------------------------------------------
+# Gate 1: confidentiality
+# ---------------------------------------------------------------------------
+say "1. confidentiality  ($count paths across the commits being pushed)"
+
+denied=$(printf '%s\n' "$paths" | grep -iE '\.(docx?|dotx|xlsx?|xlsm|xltx|pptx?|pdf|tiff?)$' || true)
+if [ -n "$denied" ]; then
+    bad "a denied format is in the history being pushed:"
+    printf '%s\n' "$denied" | sed 's/^/          /'
+    say "        These carry cached merge results -- landlord name, site address,"
+    say "        FAN, rent -- even with no merge run. .gitignore denies them, so"
+    say "        this reached the index through 'git add -f'."
+else
+    ok "no .docx/.xlsx/.pdf/.ppt/.tif in any pushed commit"
+fi
+
+stray=$(printf '%s\n' "$paths" \
+        | grep -E '(\.deal\.json$|^deals/)' \
+        | grep -vE '^fixtures/' \
+        | grep -vE '^deals/README\.md$' || true)
+if [ -n "$stray" ]; then
+    bad "a deal file outside fixtures/ is in the history being pushed:"
+    printf '%s\n' "$stray" | sed 's/^/          /'
+    say "        Saved projects describe real sites. Only fixtures/ is tracked."
+else
+    ok "no deal file outside fixtures/"
+fi
+
+flagged=""
+for f in $(git ls-tree -r --name-only HEAD | grep -E '\.deal\.json$' || true); do
+    if git show "HEAD:$f" 2>/dev/null | grep -qE '"confidential"[[:space:]]*:[[:space:]]*true'; then
+        flagged="$flagged $f"
+    fi
+done
+if [ -n "$flagged" ]; then
+    bad "a tracked deal file is marked confidential:$flagged"
+    say "        The file says so itself. Believe it."
+else
+    ok "no tracked deal file is marked confidential"
+fi
+
+# ---------------------------------------------------------------------------
+# Gate 2: the repository checks
+# ---------------------------------------------------------------------------
+say ""
+say "2. repository checks"
+
+PWSH=""
+for c in pwsh powershell; do
+    command -v "$c" >/dev/null 2>&1 && PWSH="$c" && break
+done
+
+if [ -z "$PWSH" ]; then
+    bad "no pwsh or powershell on PATH -- cannot run the checks"
+    say "        Run them by hand, or push with --no-verify if you already have."
+else
+    for chk in check-clauses check-positions check-market check-theme; do
+        if "$PWSH" -NoProfile -File "tools/$chk.ps1" >/dev/null 2>&1; then
+            ok "$chk"
+        else
+            bad "$chk -- rerun it to see why:  $PWSH -File tools/$chk.ps1"
+        fi
+    done
+fi
+
+say ""
+if [ "$failed" -ne 0 ]; then
+    say "PUSH BLOCKED. Nothing has left the machine."
+    say ""
+    exit 1
+fi
+
+say "All gates passed."
+say ""
+exit 0

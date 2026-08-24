@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+CASUALTY. If the {{AreaName}} or the {{PropertyName}} is damaged or destroyed such that {{TenantTitle}}'s use of the {{AreaName}} is materially impaired, {{RentName}} will abate in proportion to the impairment from the date of the casualty until {{TenantTitle}}'s use is restored.
+
+{{TenantTitle}} may place temporary transmission and reception facilities on the {{PropertyName}} at no additional charge until the {{AreaName}} is restored, subject to a location reasonably acceptable to {{LandlordTitle}} and to applicable law.
+
+If restoration is not substantially complete within ninety (90) days of the casualty, or if {{LandlordTitle}} elects not to restore, either party may terminate the Agreement upon written notice, without penalty or further liability, and {{TenantTitle}} will be entitled to a refund of any {{RentName}} paid in advance for periods after the date of the casualty.

@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+TERM. Commencing on {{Extension_Term_Start_Date}}, the {{TermName}} is extended for four (4) additional {{ExtensionName}}s of five (5) years each. Each {{ExtensionName}} shall commence automatically upon the expiration of the {{TermName}} then in effect, upon the same terms and conditions, unless {{TenantTitle}} notifies {{LandlordTitle}} in writing of its election not to extend at least sixty (60) days prior to the expiration of the then-current term.
+
+No act or omission of either party other than a written notice given under this paragraph shall be required for an {{ExtensionName}} to commence.

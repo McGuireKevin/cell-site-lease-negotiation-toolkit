@@ -1,0 +1,11 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+TERMINATION FOR TECHNICAL OR REGULATORY CAUSE. {{TenantTitle}} may terminate this {{DocumentType}} upon thirty (30) days prior written notice to {{LandlordTitle}}, without penalty or further liability, if any of the following occurs:
+
+(a) {{TenantTitle}} is unable to obtain, or to maintain, any licence, permit, approval or other authorisation required for the construction or operation of the {{EquipmentName}};
+
+(b) a change in applicable law, regulation or ordinance materially impairs {{TenantTitle}}'s ability to operate the {{EquipmentName}} from the {{AreaName}};
+
+(c) the {{AreaName}} becomes unsuitable for {{TenantTitle}}'s use for technological reasons, including interference which is not cured within the period allowed by the {{LeaseDocument}}; or
+
+(d) a change in {{TenantTitle}}'s network design or coverage requirements renders the {{AreaName}} no longer necessary, as determined by {{TenantTitle}} acting reasonably and in good faith.

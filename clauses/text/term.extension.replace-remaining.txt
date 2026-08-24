@@ -1,0 +1,5 @@
+Section {{sectionMap.term}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+TERM. The {{TermName}} shall expire on {{Current_Term_End_Date}}. Commencing on {{Extension_Term_Start_Date}}, {{TenantTitle}} shall have four (4) {{ExtensionName}}s of five (5) years each, each commencing automatically upon the expiration of the term then in effect unless {{TenantTitle}} notifies {{LandlordTitle}} in writing of its election not to extend at least sixty (60) days prior to that expiration.
+
+Any extension, renewal or option right stated in the {{LeaseDocument}} prior to this Amendment is superseded by this paragraph and shall be of no further force or effect.

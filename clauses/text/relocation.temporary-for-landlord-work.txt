@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+TEMPORARY RELOCATION FOR {{LandlordTitle}} WORK. If {{LandlordTitle}} must repair, replace or re-roof the portion of the {{PropertyName}} on which the {{EquipmentName}} is installed, {{LandlordTitle}} will give {{TenantTitle}} not less than ninety (90) days' prior written notice, except in an emergency, in which case notice will be given as soon as practicable.
+
+{{TenantTitle}} will cooperate in temporarily relocating the {{EquipmentName}} to permit the work. {{LandlordTitle}} will, at its sole cost and expense, provide a temporary location on the {{PropertyName}} reasonably acceptable to {{TenantTitle}} and adequate for continuous operation, and will reimburse {{TenantTitle}} for the reasonable cost of relocating the {{EquipmentName}} to that location and back to the {{AreaName}} on completion.
+
+The work will be scheduled and performed so as to permit the {{EquipmentName}} to remain in continuous operation. If continuous operation is not practicable, {{RentName}} will abate for any period during which the {{EquipmentName}} is out of service.

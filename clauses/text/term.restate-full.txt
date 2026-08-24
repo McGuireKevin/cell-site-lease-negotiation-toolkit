@@ -1,0 +1,9 @@
+Section {{sectionMap.term}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+TERM. The initial term of this {{DocumentType}} commenced on {{Lease_Commencement_Date}} and shall expire on {{Current_Term_End_Date}} (the "{{TermName}}").
+
+EXTENSIONS. Commencing on {{Extension_Term_Start_Date}}, the {{TermName}} shall be extended for four (4) additional periods of five (5) years each (each an "{{ExtensionName}}"), automatically and upon the same terms and conditions, unless {{TenantTitle}} notifies {{LandlordTitle}} in writing of its election not to extend at least sixty (60) days prior to the expiration of the term then in effect.
+
+CONTINUATION. If neither party has terminated this {{DocumentType}} at the expiration of the final {{ExtensionName}}, it shall continue upon the same terms for successive periods of one (1) year each until either party gives the other not less than six (6) months written notice of termination effective at the end of a then-current annual period.
+
+HOLDOVER. If {{TenantTitle}} remains in occupancy of the {{AreaName}} after expiration or termination, the occupancy shall be month to month upon the same terms, including the {{RentName}} payable for the last month of the term, and either party may end it on thirty (30) days written notice.

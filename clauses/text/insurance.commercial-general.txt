@@ -1,0 +1,7 @@
+Section {{sectionMap.insurance}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+INSURANCE. {{TenantTitle}} will maintain commercial general liability insurance covering bodily injury and property damage arising out of its use and occupancy, with combined single limits of not less than {{Insurance_CGL_Limit}} per occurrence, together with workers' compensation insurance in statutory amounts and employer's liability insurance in customary amounts.
+
+{{LandlordTitle}} will be named as an additional insured on the commercial general liability policy as its interest may appear. Such insurance may be carried under a blanket policy covering the {{AreaName}} and other locations. {{TenantTitle}} will furnish a certificate of insurance upon written request, not more often than once in any twelve (12) month period.
+
+Each party waives all rights of subrogation against the other for loss or damage to the extent covered by insurance required or actually carried under this Agreement.

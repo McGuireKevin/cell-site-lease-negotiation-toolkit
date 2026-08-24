@@ -1,0 +1,7 @@
+Section {{sectionMap.assignment}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+ASSIGNMENT AND SUBLEASE. {{TenantTitle}} may assign, sublease, license or otherwise transfer its interest in this {{DocumentType}}, in whole or in part, without the consent of {{LandlordTitle}}, to any parent, subsidiary or affiliate of {{TenantTitle}}, to any entity which acquires all or substantially all of {{TenantTitle}}'s assets or equity in the market in which the {{AreaName}} is located, or to any entity resulting from a merger or consolidation with {{TenantTitle}}.
+
+Any other assignment or sublease shall require the prior written consent of {{LandlordTitle}}, which shall not be unreasonably withheld, conditioned or delayed. If {{LandlordTitle}} does not respond within thirty (30) days of a written request, consent shall be deemed given.
+
+Upon an assignment where the assignee assumes {{TenantTitle}}'s obligations in writing, {{TenantTitle}} shall be released from all obligations arising after the effective date of the assignment.

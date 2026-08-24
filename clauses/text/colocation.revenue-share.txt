@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+CO-LOCATION REVENUE. For each third-party communications provider permitted by {{TenantTitle}} to use the {{EquipmentName}} or the {{AreaName}} under the co-location provisions of the Agreement, {{TenantTitle}} will pay {{LandlordTitle}} an amount equal to {{Colocation_Share_Pct}} percent of the recurring monthly fee actually received by {{TenantTitle}} from that provider for such use.
+
+Such amounts are payable monthly in arrears, commence on the date the third party's recurring fee commences, and cease when it ceases. They are calculated on the recurring fee only, and exclude any one-time application, construction, structural modification, make-ready or reimbursement payment.
+
+Amounts payable under this paragraph are not {{RentName}} for any purpose, are not subject to any escalator, and are not included in any {{RentName}} guarantee.

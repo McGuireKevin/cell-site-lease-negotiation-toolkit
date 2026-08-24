@@ -1,0 +1,7 @@
+Section {{sectionMap.removal}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+REMOVAL AND SURRENDER. Within one hundred and twenty (120) days after the expiration or earlier termination of the Agreement, {{TenantTitle}} will remove the {{EquipmentName}} and all other property owned by {{TenantTitle}} from the {{AreaName}} and surrender the {{AreaName}} in substantially the condition in which it was received, ordinary wear and tear, casualty, condemnation and damage caused by {{LandlordTitle}} excepted.
+
+{{TenantTitle}} is not required to remove any foundation, footing, conduit or below-grade improvement below a depth of three (3) feet from finished grade, nor to remove any utility installation, access improvement or other improvement that {{LandlordTitle}} elects in writing to retain.
+
+All property owned by {{TenantTitle}} will remain {{TenantTitle}}'s personal property throughout the term regardless of the manner of its attachment, and will not become a fixture or part of the realty.

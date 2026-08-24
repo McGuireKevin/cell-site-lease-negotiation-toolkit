@@ -1,0 +1,11 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+SUBORDINATION AND NON-DISTURBANCE. The Agreement is and will be subordinate to any mortgage, deed of trust or other security instrument now or hereafter encumbering the {{PropertyName}}, PROVIDED THAT the holder of such instrument delivers to {{TenantTitle}} a written agreement, in a form reasonably acceptable to {{TenantTitle}}, providing that so long as {{TenantTitle}} is not in default beyond any applicable cure period:
+
+(a) the Agreement will not be terminated, and {{TenantTitle}}'s possession and rights under the Agreement will not be disturbed, by any foreclosure, deed in lieu of foreclosure, or exercise of remedies under the instrument; and
+
+(b) any successor to {{LandlordTitle}}'s interest will recognise the Agreement and be bound by its terms, and {{TenantTitle}} will attorn to that successor.
+
+{{TenantTitle}}'s subordination is expressly conditioned upon delivery of such agreement. Absent it, the Agreement will not be subordinate.
+
+{{LandlordTitle}} will use commercially reasonable efforts to obtain such an agreement from each existing holder within sixty (60) days of {{TenantTitle}}'s written request.

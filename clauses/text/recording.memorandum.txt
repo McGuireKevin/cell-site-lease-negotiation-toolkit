@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+MEMORANDUM. Either party may, at its cost, record a memorandum of this {{Proposed_Amendment}} in the real property records of the jurisdiction in which the {{PropertyName}} is located. The memorandum will describe the parties, the {{AreaName}}, the commencement and expiration dates and any extension rights, and will not disclose the {{RentName}} or other commercial terms.
+
+{{LandlordTitle}} will execute, acknowledge and deliver such a memorandum in recordable form within thirty (30) days of {{TenantTitle}}'s written request.

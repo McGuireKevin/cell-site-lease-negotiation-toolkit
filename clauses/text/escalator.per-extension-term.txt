@@ -1,0 +1,5 @@
+Section {{sectionMap.rent}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+ESCALATION. The {{RentName}} shall be adjusted once at the commencement of each {{ExtensionName}} and shall remain fixed for the duration of that {{ExtensionName}}. The adjustment shall be the percentage stated in this Amendment applied to the {{RentName}} payable during the final month of the immediately preceding term.
+
+No annual, indexed or other periodic escalation shall apply to the {{RentName}} during an {{ExtensionName}}.

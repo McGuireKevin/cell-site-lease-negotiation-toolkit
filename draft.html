@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Amendment Drafter</title>
+<style>
+/* Shares the comparator's palette so the tools read as one product. Dark is the
+   default; every colour is a token, or it will not flip. */
+:root{
+  color-scheme:dark;
+  --bg:#14171a; --panel:#1c2024; --ink:#e7eaef; --muted:#9aa3b0; --line:#2e343b;
+  --header-bg:#191d21;
+  --accent:#6aa8f0; --accent-fill:#2f6fc4; --accent-hover:#3f83d8; --accent-soft:#1d3a5c; --on-accent:#fff;
+  --good:#4ec98a; --bad:#f2837a; --on-good:#06301c;
+  --warn:#e8bd6a; --warn-bg:#332913; --warn-line:#a67c2a; --warn-badge:#8a6100;
+  --err-bg:#3a1f1d; --err-ink:#f3a9a2;
+  --ok-bg:#15301f; --ok-ink:#7fd9a8;
+  --btn-bg:#252a30; --btn-hover:#2e343b; --btn-hover-line:#454d57;
+  --field-bg:#22272c; --th-bg:#22272c; --row-hover:#242a30; --cat-bg:#1a1e22;
+  --card-bg:#1f242a; --info-bg:#22272c; --info-line:#4a525c; --info-ink:#c3cad3;
+  --tip-bg:#1a1d21; --tip-ink:#f2f4f7; --grey:#4d5761;
+  --doc-bg:#101315;
+  --shadow-sm:rgba(0,0,0,.45); --shadow-lg:rgba(0,0,0,.55);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f4f5f7; --panel:#fff; --ink:#1a1d21; --muted:#6b7280; --line:#dfe3e8;
+  --header-bg:#fff;
+  --accent:#1f5fa9; --accent-fill:#1f5fa9; --accent-hover:#194e8c; --accent-soft:#e8f0fa; --on-accent:#fff;
+  --good:#0f7b4f; --bad:#b3261e; --on-good:#fff;
+  --warn:#8a6100; --warn-bg:#fff8e6; --warn-line:#d99a00; --warn-badge:#8a6100;
+  --err-bg:#fdecea; --err-ink:#7d1a15;
+  --ok-bg:#eaf6ef; --ok-ink:#0b5c3b;
+  --btn-bg:#fff; --btn-hover:#f0f2f5; --btn-hover-line:#c4cad2;
+  --field-bg:#fff; --th-bg:#fafbfc; --row-hover:#f7f9fc; --cat-bg:#eef1f5;
+  --card-bg:#fcfcfd; --info-bg:#fff; --info-line:#b3bac4; --info-ink:#41474f;
+  --tip-bg:#1a1d21; --tip-ink:#f2f4f7; --grey:#8b93a0;
+  --doc-bg:#fff;
+  --shadow-sm:rgba(0,0,0,.04); --shadow-lg:rgba(0,0,0,.32);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{background:var(--header-bg);border-bottom:1px solid var(--line);padding:12px 20px;position:sticky;top:0;z-index:50;
+       display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 3px var(--shadow-sm)}
+h1{font-size:19px;margin:0;font-weight:650}
+h2{font-size:15px;margin:0 0 12px;font-weight:650}
+.sub{color:var(--muted);font-size:12px}
+.spacer{flex:1}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.wrap{max-width:1280px;margin:0 auto;padding:18px 20px 80px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:var(--btn-bg);border-radius:6px;cursor:pointer;color:var(--ink)}
+button:hover{background:var(--btn-hover);border-color:var(--btn-hover-line)}
+button.primary{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill);font-weight:600}
+button.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.sm{padding:3px 8px;font-size:12px}
+label{display:block;font-size:10.5px;color:var(--muted);margin-bottom:3px;font-weight:650;letter-spacing:.03em;text-transform:uppercase}
+select,input{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:5px;width:100%;background:var(--field-bg);color:var(--ink)}
+.grid{display:grid;gap:10px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}
+.cols{display:grid;grid-template-columns:1.05fr 1fr;gap:16px;align-items:start}
+@media (max-width:1080px){.cols{grid-template-columns:1fr}}
+.msg{padding:9px 12px;border-radius:6px;margin-bottom:8px;font-size:12.5px}
+.msg.err{background:var(--err-bg);border-left:3px solid var(--bad);color:var(--err-ink)}
+.msg.warn{background:var(--warn-bg);border-left:3px solid var(--warn-line);color:var(--warn)}
+.msg.ok{background:var(--ok-bg);border-left:3px solid var(--good);color:var(--ok-ink)}
+.msg.info{background:var(--info-bg);border-left:3px solid var(--accent);color:var(--info-ink)}
+.cat{background:var(--cat-bg);color:var(--accent);font-weight:700;font-size:11px;text-transform:uppercase;
+     letter-spacing:.05em;padding:5px 10px;margin:12px 0 4px;border-radius:4px}
+.cl{display:grid;grid-template-columns:22px 1fr auto;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line);align-items:start}
+.cl:hover{background:var(--row-hover)}
+.cl.sel{background:var(--accent-soft)}
+.cl.blocked{opacity:.5}
+.cl .t{font-weight:600;font-size:13px}
+.cl .w{font-size:11.5px;color:var(--muted);margin-top:2px}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px;letter-spacing:.04em;white-space:nowrap}
+.b3{background:var(--good);color:var(--on-good)}.b2{background:var(--accent-fill);color:var(--on-accent)}
+.b1{background:var(--grey);color:var(--on-accent)}
+.b0{background:var(--field-bg);color:var(--muted);border:1px solid var(--line)}
+.bneg{background:var(--warn-badge);color:var(--on-accent)}
+.bdraft{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+.doc{background:var(--doc-bg);border:1px solid var(--line);border-radius:6px;padding:22px 26px;
+     font:13.5px/1.7 Georgia,"Times New Roman",serif;max-height:640px;overflow:auto;white-space:pre-wrap}
+.doc h3{font:700 12px/1.4 -apple-system,sans-serif;text-transform:uppercase;letter-spacing:.06em;
+        color:var(--muted);margin:20px 0 6px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.doc .first{margin-top:0}
+.filebtn{position:relative;overflow:hidden;display:inline-block}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--tip-bg);color:var(--tip-ink);
+       padding:10px 18px;border-radius:7px;z-index:999;font-size:13px;max-width:700px;box-shadow:0 4px 14px var(--shadow-lg)}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+code{font-family:var(--mono);background:var(--field-bg);padding:1px 4px;border-radius:3px;font-size:12px}
+.admin-only{display:none!important}
+body.admin .admin-only{display:inline-block!important}
+body.admin div.admin-only{display:block!important}
+.scroll{max-height:620px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+@media print{
+  :root{ --bg:#fff; --panel:#fff; --ink:#1a1d21; --muted:#555; --line:#ccc; --doc-bg:#fff;
+         --header-bg:#fff; --shadow-sm:none; --shadow-lg:none }
+  header,.noprint{display:none!important}
+  body{background:#fff}
+  .cols{grid-template-columns:1fr}
+  .doc{max-height:none;overflow:visible;border:none;padding:0}
+  .scroll{max-height:none;overflow:visible}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @page{margin:18mm}
+}
+</style>
+<script>
+(function(){ try{ if(localStorage.getItem('leaseComparator_theme')==='light')
+  document.documentElement.setAttribute('data-theme','light'); }catch(e){} })();
+</script>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Amendment Drafter</h1>
+    <div class="sub">Stage 6 &mdash; assemble the amendment from the clause library</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="row noprint">
+    <span class="filebtn"><button>Open Deal File</button><input type="file" accept=".json" onchange="openDeal(this)"></span>
+    <button onclick="saveDeal()">Save Deal File</button>
+    <button id="exportBtn" class="primary" onclick="exportDoc()" disabled>Export .docx</button>
+    <button class="admin-only" id="themeBtn" onclick="toggleTheme()">Light Mode</button>
+    <button onclick="window.print()">Print</button>
+    <span class="badge bneg admin-only" title="Ctrl+Shift+A to leave admin mode">admin</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="loadState"></div>
+
+  <div class="panel noprint" id="setup" style="display:none">
+    <h2>This amendment</h2>
+    <div class="grid g3">
+      <div>
+        <label>Agreed proposal</label>
+        <select id="proposal" onchange="render()"></select>
+      </div>
+      <div>
+        <label>Amendment name (derived)</label>
+        <input id="amendName" readonly>
+      </div>
+      <div>
+        <label>Rent name in this lease (derived)</label>
+        <input id="rentName" readonly>
+      </div>
+    </div>
+    <p class="hint">
+      The amendment names itself from its position in the document chain, not from what the last
+      one called itself &mdash; stated titles and chronological order disagree often enough that
+      typing it is how the wrong one gets used.
+    </p>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="panel noprint">
+        <h2>Clauses</h2>
+        <div class="row" style="margin-bottom:8px">
+          <button class="sm" onclick="selectRecommended()">Select recommended</button>
+          <button class="sm" onclick="setAll(false)">Clear all</button>
+          <span class="hint" style="margin:0">Recommended = every gap the audit found, plus boilerplate.
+          <b>Every clause stays selectable</b> &mdash; the audit finds terms one at a time, a draft trades across them.</span>
+        </div>
+        <div class="scroll" id="clauses"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel" id="readinessPanel">
+        <h2>Readiness</h2>
+        <div id="readiness"></div>
+      </div>
+      <div class="panel">
+        <h2>Preview</h2>
+        <div class="doc" id="preview"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="src/lease-engine.js"></script>
+<script src="src/clause-assembler.js"></script>
+<script src="src/docx-style.js"></script>
+<script src="src/docx-writer.js"></script>
+<script src="clauses/clause-data.js"></script>
+<script>
+/* =============================================================================
+   Amendment Drafter — stage 6.
+
+   Selection and resolution live in src/clause-assembler.js so they can be
+   tested without a browser driving them. This file is the surface.
+
+   THE GATE: Export is disabled while anything is blocking. That is the whole
+   design. In the process this replaces, "Section XX" reached executed documents
+   because filling it in was a checklist item; a checklist catches it most of
+   the time and a hard failure catches it every time.
+   ============================================================================= */
+let deal = null, selected = new Set(), lastAssembly = null;
+const LIB = window.CLAUSE_LIBRARY, TEXTS = window.CLAUSE_TEXTS, IMPACTS = window.CLAUSE_IMPACTS;
+const byId = {}; LIB.clauses.forEach(c => byId[c.id] = c);
+
+/* The list re-sorts as the selection changes, because the "related" section
+   depends on it. Scroll position is preserved by hand — losing your place in a
+   72-clause list every time you tick a box is its own reason not to use the
+   tool. */
+function rebuildList(){
+  const box = document.getElementById('clauses');
+  const at = box ? box.scrollTop : 0;
+  buildList();
+  if(box) box.scrollTop = at;
+}
+
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function benefitBadge(n){
+  const cls = n>=3?'b3':n>=2?'b2':n>=1?'b1':n<0?'bneg':'b0';
+  return `<span class="badge ${cls}" title="Tenant benefit">${n>0?'+':''}${n}</span>`;
+}
+
+/* ---------- deal file ---------- */
+function openDeal(inp){
+  const f = inp.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const o = JSON.parse(r.result);
+      if(!o.glob || !o.current) throw new Error('Not a deal file from this toolkit.');
+      deal = o;
+      selected = new Set((o.clauseSelection||[]).map(x=>x.clauseId).filter(id=>byId[id]));
+      document.getElementById('setup').style.display='';
+      document.getElementById('proposal').innerHTML =
+        (o.proposals||[]).map(p=>`<option value="${esc(p.id||'')}">${esc(p.label||p.id||'(unlabelled)')}</option>`).join('')
+        || '<option value="">(no proposals in this file)</option>';
+      buildList();
+      render();
+      document.getElementById('loadState').innerHTML =
+        `<div class="msg info"><b>Loaded:</b> ${esc((o.glob&&o.glob.projectName)||'(unnamed deal)')}`+
+        (o.confidential ? ` &nbsp;·&nbsp; <b>confidential</b> &mdash; export outside the repository` : '')+
+        (o.stage ? ` &nbsp;·&nbsp; stage: <code>${esc(o.stage)}</code>` : '')+`</div>`;
+      toast('Deal file loaded.');
+    }catch(e){ alert('Could not read that file: '+e.message); }
+    inp.value='';
+  };
+  r.readAsText(f);
+}
+
+function saveDeal(){
+  if(!deal){ alert('Open a deal file first.'); return; }
+  /* Record the section number this clause resolved to, not the {{sectionMap.x}}
+     reference — the deal file should say which section was amended, so a later
+     reader does not have to re-resolve it. */
+  const sectionFor = id => {
+    const ref = byId[id].targetSection || '';
+    const m = ref.match(/^\{\{sectionMap\.([A-Za-z0-9_]+)\}\}$/);
+    return m ? ((deal.sectionMap||{})[m[1]] || '') : ref;
+  };
+  deal.clauseSelection = [...selected].map(id=>({ clauseId:id, targetSection:sectionFor(id) }));
+  if(!deal.stage || deal.stage==='comparison' || deal.stage==='negotiation') deal.stage='drafting';
+  const name = ((deal.glob&&deal.glob.projectName)||'deal').replace(/[^A-Za-z0-9]+/g,'-')
+                 .replace(/^-|-$/g,'').toLowerCase() || 'deal';
+  dl(name+'.deal.json', JSON.stringify(deal,null,2), 'application/json');
+  toast('Clause selection written into the deal file.');
+}
+
+/* ---------- clause list ----------
+   THREE SECTIONS, and the order is the point.
+
+   Every clause in the library stays selectable at every stage — a redraft
+   routinely needs a term nobody raised in round one. What changes between
+   sections is prominence, not availability.
+
+     1. What the audit flagged, worst first.
+     2. What the current selection drags in with it. The audit finds problems
+        one term at a time; a draft trades across terms, so proposing a longer
+        term should surface termination even where the audit recorded nothing
+        against it.
+     3. Everything else, by category.                                        */
+function clauseRow(c, extra){
+  return `<div class="cl" id="cl-${esc(c.id)}">
+    <div><input type="checkbox" data-id="${esc(c.id)}" onchange="toggle(this)" style="width:auto"></div>
+    <div>
+      <div class="t">${esc(c.title)}</div>
+      <div class="w">${esc(c.whenToUse||'')}</div>
+      ${extra||''}
+    </div>
+    <div style="text-align:right;white-space:nowrap">
+      ${benefitBadge(Number(c.tenantBenefit)||0)}
+      ${c.provenance==='researched' ? '<span class="badge bdraft" title="Composed from market practice; never used, not reviewed by counsel">draft</span>' : ''}
+    </div>
+  </div>`;
+}
+
+function buildList(){
+  let html = '';
+  const shown = new Set();
+
+  /* --- 1. flagged by the audit --- */
+  const flagged = deal ? auditFlagged(deal, LIB) : [];
+  if(flagged.length){
+    html += `<div class="cat">flagged by the audit</div>`;
+    flagged.forEach(f => {
+      const c = byId[f.clauseId];
+      shown.add(c.id);
+      html += clauseRow(c, `<div class="w" style="color:var(--warn)">
+        <b>${esc(f.priority||'')}</b>${f.gap!=null?` · gap ${esc(String(f.gap))}`:''} —
+        ${esc(f.summary||'')}</div>`);
+    });
+  }
+
+  /* --- 2. related to what is selected --- */
+  const rel = relatedClauses([...selected], LIB, IMPACTS);
+  if(rel.length){
+    html += `<div class="cat">related to what you have selected</div>`;
+    rel.forEach(r => {
+      html += `<div style="padding:8px 10px;background:var(--info-bg);border-left:3px solid var(--accent);
+                 font-size:12px;color:var(--info-ink)">
+        <b>${esc(r.category.replace(/-/g,' '))}</b> — ${esc(r.because)}
+        <div style="color:var(--muted);margin-top:2px">Raised because you selected
+          &ldquo;${esc(r.triggeredByTitle)}&rdquo;. The audit did not flag this.</div>
+      </div>`;
+      r.options.slice(0,3).forEach(c => { shown.add(c.id); html += clauseRow(c); });
+    });
+  }
+
+  /* --- 3. everything else --- */
+  html += `<div class="cat">all clauses</div>`;
+  let cat = '';
+  LIB.clauses.forEach(c => {
+    if(shown.has(c.id)) return;
+    if(c.category !== cat){ cat = c.category;
+      html += `<div class="cat" style="opacity:.75">${esc(cat.replace(/-/g,' '))}</div>`; }
+    html += clauseRow(c);
+  });
+
+  document.getElementById('clauses').innerHTML = html;
+  syncChecks();
+}
+
+function syncChecks(){
+  document.querySelectorAll('#clauses input[data-id]').forEach(i=>{
+    i.checked = selected.has(i.dataset.id);
+    const row = document.getElementById('cl-'+i.dataset.id);
+    if(row) row.classList.toggle('sel', i.checked);
+  });
+}
+
+function toggle(el){
+  const id = el.dataset.id;
+  if(el.checked){
+    /* Mutually exclusive clauses are DESELECTED on selection rather than
+       refused. Refusing makes the user hunt for what is blocking; swapping
+       does what they meant and says so. */
+    const drop = (byId[id].conflictsWith||[]).filter(x=>selected.has(x));
+    drop.forEach(x=>selected.delete(x));
+    selected.add(id);
+    if(drop.length) toast('Deselected '+drop.length+' mutually exclusive clause'+(drop.length>1?'s':'')+'.');
+  } else selected.delete(id);
+  rebuildList(); render();
+}
+
+function setAll(on){ selected = on ? new Set(LIB.clauses.map(c=>c.id)) : new Set(); rebuildList(); render(); }
+
+/* Recommended = what the audit says is missing, plus the boilerplate every
+   amendment carries. Deliberately not "everything scored +3": a clause is only
+   worth including if this lease actually lacks it. */
+function selectRecommended(){
+  if(!deal){ alert('Open a deal file first.'); return; }
+  const findings = ((deal.audit||{}).termsAnalysis||{}).findings||[];
+  const want = new Set();
+  findings.forEach(f=>{
+    if((f.state==='absent'||f.state==='present-weaker') && f.priority!=='do-not-raise' && byId[f.clauseId])
+      want.add(f.clauseId);
+  });
+  LIB.clauses.filter(c=>c.category==='boilerplate').forEach(c=>want.add(c.id));
+  if(!want.size){
+    toast('No terms analysis in this deal file — nothing to recommend. Select clauses by hand.');
+    return;
+  }
+  /* Resolve conflicts by keeping the higher-benefit clause. */
+  const out = new Set();
+  [...want].sort((a,b)=>(byId[b].tenantBenefit||0)-(byId[a].tenantBenefit||0))
+    .forEach(id=>{ if(!(byId[id].conflictsWith||[]).some(x=>out.has(x))) out.add(id); });
+  selected = out; rebuildList(); render();
+  const rel = relatedClauses([...out], LIB, IMPACTS);
+  toast('Selected '+out.size+' clauses from the audit findings.' +
+        (rel.length ? ' ' + rel.length + ' related subject' + (rel.length>1?'s':'') +
+         ' the audit did not flag are listed below them — a draft trades across terms.' : ''));
+}
+
+/* ---------- render ---------- */
+function render(){
+  if(!deal) return;
+  const pid = document.getElementById('proposal').value;
+  const a = assess(deal, [...selected], LIB, TEXTS, pid);
+
+  document.getElementById('amendName').value = a.map['Proposed_Amendment'] || '(cannot derive)';
+  document.getElementById('rentName').value  = a.map['RentName'] || '(not defined in this lease)';
+
+  let h = '';
+  if(a.blocking.length){
+    h += `<div class="msg err"><b>${a.blocking.length} problem${a.blocking.length>1?'s':''} &mdash; export is blocked.</b>
+          A document must not be producible with an unresolved reference in it.</div>`;
+    h += a.blocking.map(m=>`<div class="msg err">${esc(m)}</div>`).join('');
+  } else if(selected.size){
+    h += `<div class="msg ok"><b>Ready.</b> Every placeholder resolves, no clause conflicts,
+          every requirement met. Net tenant benefit ${a.netBenefit>0?'+':''}${a.netBenefit} across
+          ${a.chosen.length} clauses.</div>`;
+  }
+  h += a.warnings.map(m=>`<div class="msg warn">${esc(m)}</div>`).join('');
+  /* The preamble is scaffolding, not a clause, so it is not covered by the
+     placeholder gate — but an amendment that never names its parties is not a
+     document either. Reported rather than blocked: the missing value is in the
+     deal file, and this tool does not edit the deal file. */
+  if(selected.size){
+    const miss = missingPreambleValues(a);
+    if(miss.length) h += `<div class="msg warn"><b>The preamble will be short ${miss.length} value${miss.length>1?'s':''}:</b>
+      <code>${miss.map(esc).join('</code> <code>')}</code>. Sentences that need them are dropped rather than
+      exported with a gap. Fill them in the deal file if the amendment is going out.</div>`;
+  }
+  document.getElementById('readiness').innerHTML = h ||
+    '<div class="msg info">Select clauses to begin.</div>';
+
+  const r = assemble(deal, [...selected], LIB, TEXTS, pid);
+  lastAssembly = r.ok ? r : null;
+  document.getElementById('exportBtn').disabled = !r.ok;
+
+  document.getElementById('preview').innerHTML = r.ok
+    ? r.parts.map((p,i)=>`<h3 class="${i===0?'first':''}">${esc(p.title)}</h3>${esc(p.text)}`).join('')
+    : '<span style="color:var(--muted)">Resolve the problems above to preview the document.</span>';
+}
+
+/* ---------- export ----------
+   A real .docx, written against the house style in src/docx-style.js.
+
+   The previous export was Word-openable HTML, which Word does open — but it
+   arrives with no styles, no real numbering and no page setup, so the first
+   thing anyone does is reformat it by hand. That hand-formatting IS drift, on
+   round one, before the landlord has seen it. */
+
+/* The scaffolding an amendment needs to be a document: who, under what, and
+   the operative "now therefore". Assembled ONLY from values the resolution map
+   already carries — a sentence whose value is missing is dropped rather than
+   emitted with a gap in it, and render() reports what was dropped. */
+function preambleFor(a){
+  const m = a.map, out = [];
+  const amend = m['Proposed_Amendment'] || 'Amendment';
+  const base  = m['LeaseDocument'] || 'Lease';
+  const ll = m['LandlordTitle'] || 'Landlord', tt = m['TenantTitle'] || 'Tenant';
+
+  if(m['Landlord_Name'] && m['Tenant_Notice_Entity']){
+    out.push('THIS ' + amend.toUpperCase() + ' TO ' + base.toUpperCase() +
+      ' (this "Amendment") is entered into by and between ' + m['Landlord_Name'] +
+      ' ("' + ll + '") and ' + m['Tenant_Notice_Entity'] + ' ("' + tt + '").');
+  }
+  out.push('WHEREAS, ' + ll + ' and ' + tt + ' are parties to that certain ' + base +
+    (m['Lease_Commencement_Date'] ? ' dated ' + m['Lease_Commencement_Date'] : '') +
+    ' (the "' + base + '"), and the parties desire to amend it as set forth below;');
+  out.push('NOW, THEREFORE, in consideration of the mutual covenants set forth herein and other ' +
+    'good and valuable consideration, the receipt and sufficiency of which are acknowledged, the ' +
+    'parties agree as follows:');
+  return out;
+}
+
+function missingPreambleValues(a){
+  return ['Landlord_Name','Tenant_Notice_Entity','LeaseDocument','Lease_Commencement_Date']
+    .filter(k => !a.map[k]);
+}
+
+function buildAmendmentDoc(){
+  const a = lastAssembly.assessment;
+  const amend = a.map['Proposed_Amendment'] || 'Amendment';
+  const base  = a.map['LeaseDocument'] || 'Lease';
+  const ll = a.map['LandlordTitle'] || 'Landlord', tt = a.map['TenantTitle'] || 'Tenant';
+  return {
+    title: amend + ' to ' + base,
+    preamble: preambleFor(a),
+    /* One clause, one numbered section. The clause text already opens with its
+       own lead-in ("Termination. Tenant may…"), so the title is not repeated. */
+    clauses: lastAssembly.parts.map(p => ({text: p.text})),
+    closing: ['IN WITNESS WHEREOF, the parties have executed this Amendment as of the date last ' +
+              'written below.'],
+    signature: [ll.toUpperCase() + ':', 'By: ____________________________', 'Name:', 'Title:', 'Date:',
+                tt.toUpperCase() + ':', 'By: ____________________________', 'Name:', 'Title:', 'Date:']
+  };
+}
+
+function exportDoc(){
+  if(!lastAssembly){ alert('Nothing to export.'); return; }
+  const name = ((deal.glob&&deal.glob.projectName)||'amendment').replace(/[^A-Za-z0-9]+/g,'-')
+                 .replace(/^-|-$/g,'').toLowerCase() || 'amendment';
+  const doc = buildAmendmentDoc();
+  const blob = buildDocx(doc, {author: 'Lease negotiation toolkit'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name + '-amendment.docx';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},0);
+  toast('Exported .docx — Times New Roman 11pt, auto-numbered sections, house page setup.');
+}
+
+function dl(name,text,mime){
+  const b = new Blob([text],{type:mime||'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},0);
+}
+function toast(m){
+  const d=document.createElement('div'); d.className='toast'; d.textContent=m;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),3200);
+}
+
+/* ---------- admin + theme, shared with the other tools ---------- */
+const AKEY='leaseComparator_adminMode', TKEY='leaseComparator_theme';
+function setAdmin(on,announce){
+  document.body.classList.toggle('admin',!!on);
+  try{ on?localStorage.setItem(AKEY,'1'):localStorage.removeItem(AKEY); }catch(e){}
+  if(announce) toast(on?'Admin mode on — the theme switch is in the toolbar. Ctrl+Shift+A turns it off.'
+                      :'Admin mode off.');
+}
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.shiftKey&&(e.key==='A'||e.key==='a')){ e.preventDefault();
+    setAdmin(!document.body.classList.contains('admin'),true); }
+});
+(function(){ let on=false; try{ on=localStorage.getItem(AKEY)==='1'; }catch(e){}
+  if(/[?&]admin=1(&|$)/.test(location.search)) on=true;
+  if(on) document.body.classList.add('admin'); })();
+function currentTheme(){ return document.documentElement.getAttribute('data-theme')==='light'?'light':'dark'; }
+function setTheme(t,announce){
+  const light=t==='light';
+  if(light) document.documentElement.setAttribute('data-theme','light');
+  else document.documentElement.removeAttribute('data-theme');
+  try{ localStorage.setItem(TKEY,light?'light':'dark'); }catch(e){}
+  const b=document.getElementById('themeBtn');
+  if(b) b.textContent = light?'Dark Mode':'Light Mode';
+  if(announce) toast(light?'Light mode on — this machine only.':'Dark mode on.');
+}
+function toggleTheme(){ setTheme(currentTheme()==='light'?'dark':'light',true); }
+setTheme(currentTheme(),false);
+
+buildList();
+document.getElementById('readiness').innerHTML =
+  '<div class="msg info">Open a deal file to begin. Clause selection, placeholder resolution and '+
+  'the readiness checks all run against it.</div>';
+</script>
+</body>
+</html>

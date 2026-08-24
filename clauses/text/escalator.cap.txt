@@ -1,0 +1,5 @@
+Section {{sectionMap.rent}} of the Agreement is hereby amended as follows:
+
+The annual increase in the {{RentName}} shall not exceed {{EscalatorProposal}} percent of the {{RentName}} payable during the immediately preceding twelve (12) month period, notwithstanding any index, formula or greater-of provision stated elsewhere in the {{LeaseDocument}}.
+
+Where the {{LeaseDocument}} provides for an increase measured by an index, the increase in any year shall be the lesser of that index measure and the cap stated in this paragraph.

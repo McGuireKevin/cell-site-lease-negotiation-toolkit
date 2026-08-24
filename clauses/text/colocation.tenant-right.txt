@@ -1,0 +1,9 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+CO-LOCATION. {{TenantTitle}} may license, sublease or otherwise permit the use of space on or within the {{EquipmentName}} and the {{AreaName}} by one or more third-party communications providers, without {{LandlordTitle}}'s consent, provided that:
+
+(a) each such party's use is consistent with the Permitted Use and with applicable law;
+
+(b) {{TenantTitle}} remains responsible to {{LandlordTitle}} for performance of the Agreement; and
+
+(c) {{TenantTitle}} gives {{LandlordTitle}} written notice identifying each such party within thirty (30) days of the commencement of its use.

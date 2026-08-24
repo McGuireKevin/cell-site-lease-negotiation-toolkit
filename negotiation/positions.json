@@ -1,0 +1,230 @@
+{
+  "$comment": "NEGOTIATING POSITIONS — the half of a playbook that recurs on every site.\n\nLandlords repeat themselves. \"3% is standard\", \"you have four automatic renewals so you are not going anywhere\", \"we cannot control what our other tenants do\" — these arrive on site after site, and they deserve an answer written once, reviewed once, and reused, rather than re-improvised under time pressure on a call.\n\nWHAT IS NOT HERE. Anything site-specific. The argument that persuades a municipal lessor with a public-safety mandate is not the argument that persuades a tower company, and no data file can hold that. The skill assembles the site-specific case; this supplies the parts that do not change.\n\nWHAT IS NOT HERE, PART TWO. Numbers. Every figure in a playbook comes from the comparator through the deal file. A position that quotes a PV it worked out for itself will disagree with the model it came from, and two documents in one deal file disagreeing about money is worse than having neither.\n\nKeyed by clause category, the same as clauses/impacts.json, and checked against the library by tools/check-positions.ps1.",
+
+  "version": "0.1",
+  "status": "placeholder — the arguments are sound but have not been through counsel or a negotiator's review",
+
+  "strategy": {
+    "opening": "Open on the terms case, not the rent. A rent ask invites a rent counter and the conversation never leaves the number. Terms cost the landlord little to concede on paper, they establish that the file is being worked properly, and they give you something to trade back later. Where the audit found only a financial case and clean terms, say so plainly rather than manufacturing term asks — a landlord who spots a padded list stops believing the real items.",
+    "sequencing": "Raise everything you intend to raise in the FIRST round. A term introduced in round three reads as bad faith and reopens items already settled. That is also why the drafter surfaces related subjects the audit never flagged: the round to ask for termination is the round you ask for term.",
+    "concession": "Concede in the order you decided before the call, not in the order they push. Every concession buys something — say what it buys as you make it. A concession given to keep the conversation moving is a concession given for nothing.",
+    "doNotRaise": "Where the audit recorded present-better, do not raise the subject at all. Raising co-location on a lease that permits it with no revenue share invites the landlord to price it, and you cannot un-ask the question.",
+    "walkAway": "The walk-away is arithmetic, not nerve: the point where the landlord's counter costs more in present value than doing nothing. The comparator computes both sides. Carry the number into the room and know it before you need it."
+  },
+
+  "byCategory": {
+    "rent": {
+      "position": "Rent at or below the indicated band for the market, tier and structure type, tested against the schedule rather than against what the landlord believes the site is worth.",
+      "entitlement": "The market test. Without it there is no entitlement argument, only an assertion — and an assertion invites one back.",
+      "objections": [
+        { "landlord": "The rent is at or below market.",
+          "counter": "Ask what comparables that is based on. Municipal lessors are usually benchmarking against nothing, and carriers are benchmarking against their own portfolio. Put the band, the tier and the structure type on the table and invite them to show theirs.",
+          "note": "This is the objection that most often collapses on contact, because the landlord has no data behind it." },
+        { "landlord": "We have not raised the rent in years.",
+          "counter": "The escalator has been raising it every year. Show the computed history — on a 3% escalator a rent doubles in 24 years without anyone sending a letter.",
+          "note": "Works because it is arithmetic they can check, and because it reframes the escalator as the increase it is." },
+        { "landlord": "The carrier on the other side of the tower pays more.",
+          "counter": "A colocation rate is not a ground rate, and a rate set in a different year on a different structure is not a comparable. Ask for the date and the structure.",
+          "note": "" }
+      ],
+      "ladder": { "opening": "The indicated band low, where the audit supports it.", "target": "Band mid.", "walkAway": "The point where the counter's present value exceeds doing nothing — computed, not judged." },
+      "tradeFor": ["term"],
+      "concede": "Rent is the concession the landlord wants most, so it is the one that should buy the most. Never give it for goodwill."
+    },
+
+    "escalator": {
+      "position": "A cap on the annual increase, or CPI with a collar. A fixed percentage compounding across four automatic extensions is the largest number in most of these deals and the least examined.",
+      "entitlement": "Compounding arithmetic over the full term, from the comparator. The escalator is usually worth more than the rent reduction being argued about.",
+      "objections": [
+        { "landlord": "Three percent is standard.",
+          "counter": "Standard where, and set when? A fixed 3% written in 1998 was a bet on inflation the landlord has won every year since. Offer CPI with a floor and a cap — they keep protection against a spike and stop being paid for inflation that did not happen.",
+          "note": "The strongest version of this offers the landlord a FLOOR. It is a concession that costs little and makes the cap saleable." },
+        { "landlord": "A cap costs us if inflation runs.",
+          "counter": "That is what the collar is for. Price both ways in the comparator and show them the range rather than arguing about the forecast.",
+          "note": "" },
+        { "landlord": "We will take the cap, but we want term for it.",
+          "counter": "That is a real trade and usually a good one — but price it. A cap across a longer term can still beat an uncapped shorter one.",
+          "note": "This is the most common productive outcome, which is why term and escalator should be raised in the same round." }
+      ],
+      "ladder": { "opening": "CPI with a 0–2% collar.", "target": "Fixed 2%, or CPI capped at 3%.", "walkAway": "Anything with a floor and no cap — a greater-of is a ratchet, not an escalator." },
+      "tradeFor": ["term"],
+      "concede": "Give the floor before you give the cap."
+    },
+
+    "term": {
+      "position": "Term length that matches the site's expected life, with the extension mechanism automatic and the non-renewal notice short.",
+      "entitlement": "A longer term is worth real money to the landlord — guaranteed income, no re-letting risk, no vacancy. It is not a favour being asked.",
+      "objections": [
+        { "landlord": "A longer term is worth more to you than to us.",
+          "counter": "It is worth certainty to both. Quantify theirs: the income stream over the extension, with no re-letting cost and no vacancy risk. Landlords routinely undervalue this because they never price the alternative.",
+          "note": "" },
+        { "landlord": "We want flexibility in case we redevelop.",
+          "counter": "Redevelopment is a relocation problem, not a term problem. Offer a relocation right with the landlord bearing the cost and a substitute location approved in advance — they keep the flexibility they actually want and you keep the term.",
+          "note": "This converts a term fight into a relocation clause, which is nearly always the better trade." },
+        { "landlord": "You already have four automatic renewals. You are not going anywhere.",
+          "counter": "Correct, and that is the point: the landlord already has that certainty and is not being asked to give anything new. If the term is not in dispute, the ask should be the cap or the termination right instead.",
+          "note": "Take this one seriously. Where it is true, the term ask is padding and should be dropped." }
+      ],
+      "ladder": { "opening": "The full extension structure the site needs.", "target": "Automatic extensions with short notice.", "walkAway": "Affirmative-exercise renewals with a long notice period — an option that must be remembered is an option that gets missed." },
+      "tradeFor": ["rent", "termination", "escalator"],
+      "concede": "Term is the currency. Spend it deliberately."
+    },
+
+    "termination": {
+      "position": "Termination for convenience on notice, without a fee, or with a fee capped at a stated number of months.",
+      "entitlement": "Technology changes and search rings move. A site that cannot be exited is a liability carried at full cost for the remainder of the term.",
+      "objections": [
+        { "landlord": "If you can leave at any time we have no certainty at all.",
+          "counter": "Certainty is priced, not absolute. Offer notice plus a termination fee — six months notice and three months rent is common on carrier paper and gives them a quantified worst case.",
+          "note": "Almost always lands. The landlord's real fear is a surprise, not an exit." },
+        { "landlord": "No other tenant has that right.",
+          "counter": "Carrier forms carry it as standard, frequently at 60 days with a fee of three months rent. Say so.",
+          "note": "" },
+        { "landlord": "You are asking for a longer term AND the right to leave.",
+          "counter": "Yes, and that is the trade: the landlord gets a longer guaranteed stream, we get an exit if the technology moves. Without the exit the longer term is worse than what it replaced.",
+          "note": "This is the objection to prepare for whenever term and termination are raised together, which should be always." }
+      ],
+      "ladder": { "opening": "Convenience termination on notice, no fee.", "target": "Notice plus a fee of three to six months rent.", "walkAway": "Termination only for regulatory or technical impossibility — narrow enough to be unusable in practice." },
+      "tradeFor": ["term"],
+      "concede": "A termination right conceded for a rent guarantee is usually a good trade. Conceded for nothing it is the most expensive thing on the list."
+    },
+
+
+    "colocation": {
+      "position": "The right to license space to third parties, with any revenue share stated and bounded.",
+      "entitlement": "Colocation is how the economics of a site are recovered. A prohibition converts a shared asset into a single-tenant cost.",
+      "objections": [
+        { "landlord": "Colocation is our revenue, not yours.",
+          "counter": "Offer a share rather than arguing the principle — 15 to 30 percent of net is the usual range. A fixed uplift per colocated user is simpler to administer and often preferred by municipal lessors.",
+          "note": "" },
+        { "landlord": "Extra users mean extra wear on the structure.",
+          "counter": "Offer a structural analysis at tenant cost before each addition. It answers the real concern and costs less than the fight.",
+          "note": "" }
+      ],
+      "ladder": { "opening": "Colocation permitted, no share.", "target": "Permitted with a stated share of net revenue.", "walkAway": "Consent at sole discretion." },
+      "tradeFor": ["rent", "structural"],
+      "concede": "The share percentage. Not the right itself.",
+      "doNotRaiseIf": "The lease already permits colocation with no share. Raising it invites the landlord to price something they are currently giving away."
+    },
+
+    "sublease": {
+      "position": "Assignment and sublease to affiliates, successors and on merger without consent; otherwise consent not to be unreasonably withheld, conditioned or delayed.",
+      "entitlement": "Carrier corporate structures change constantly, and a consent requirement that catches an internal reorganisation is a transaction blocker discovered at the worst moment.",
+      "objections": [
+        { "landlord": "We want to know who is on our property.",
+          "counter": "Offer notice rather than consent. They get the information; the transaction is not held hostage to it.",
+          "note": "Lands more often than not, because the stated concern is genuinely about information." },
+        { "landlord": "Consent is standard.",
+          "counter": "Consent with a reasonableness standard is standard. Consent at sole discretion is not, and the difference is the entire clause.",
+          "note": "" }
+      ],
+      "ladder": { "opening": "No consent for affiliates, successors or merger.", "target": "That, plus reasonableness on everything else.", "walkAway": "Sole discretion, or consent with no time limit on the answer." },
+      "tradeFor": ["colocation"],
+      "concede": "Notice obligations, reporting. Never the affiliate carve-out."
+    },
+
+    "interference": {
+      "position": "The landlord will not grant rights to anyone whose operations interfere, and will cause interference to cease within a short, stated period.",
+      "entitlement": "Interference protection is the only clause governing what the landlord may let a later tenant do to this site, and it cannot be recovered once another carrier is installed.",
+      "objections": [
+        { "landlord": "We cannot control what our other tenants do.",
+          "counter": "You control who you grant space to, and what their agreement says. The obligation is to not grant interfering rights and to enforce the ones you have. That is within their gift.",
+          "note": "The strongest single counter in this file. It reframes an impossibility argument as a drafting one." },
+        { "landlord": "Twenty-four hours to cure is unreasonable.",
+          "counter": "RF interference takes a site off air. Every hour is an outage with a service obligation behind it. Offer a longer period for non-RF physical obstruction and hold the short one for RF.",
+          "note": "Splitting the cure period by interference type usually closes this." }
+      ],
+      "ladder": { "opening": "No interfering grants, 24-hour cure, suspension of the offending use until cured.", "target": "That, with a longer cure for physical obstruction.", "walkAway": "Reasonable efforts. It is not a standard a site can be operated on." },
+      "tradeFor": ["colocation"],
+      "concede": "The cure period for non-RF interference."
+    },
+
+    "structural": {
+      "position": "Equipment modification, replacement and addition within the structure's capacity, without consent, subject to a tenant-funded structural analysis where capacity is genuinely in question.",
+      "entitlement": "Technology refresh cycles are shorter than lease terms. A consent requirement on equipment converts every upgrade into a negotiation.",
+      "objections": [
+        { "landlord": "Any addition needs our approval.",
+          "counter": "Offer approval not to be unreasonably withheld, with a deemed-approval clock — fifteen or thirty days and silence is consent. The clock is the part that matters; without it, consent is a veto exercised by not answering.",
+          "note": "Always ask for the clock. It is conceded far more often than the consent right itself." },
+        { "landlord": "We need to verify capacity.",
+          "counter": "Agreed, at tenant cost, against a stated engineering standard, within a stated period.",
+          "note": "" }
+      ],
+      "ladder": { "opening": "Modification without consent within capacity.", "target": "Consent not unreasonably withheld, with a deemed-approval clock.", "walkAway": "Sole discretion, or consent with no time limit." },
+      "tradeFor": ["colocation", "rent"],
+      "concede": "The analysis cost, and reporting."
+    },
+
+    "permitted-use": {
+      "position": "Use broad enough to cover current and successor technologies, including equipment not yet specified.",
+      "entitlement": "A use clause enumerating 2010 equipment does not authorise 2026 equipment, and the landlord's leverage arrives at the moment of the upgrade.",
+      "objections": [
+        { "landlord": "The use clause already covers what you have.",
+          "counter": "It covers what we had. Ask whether they intend to renegotiate at every technology change — the answer is usually no, and the drafting should say so.",
+          "note": "" }
+      ],
+      "ladder": { "opening": "Any lawful communications use.", "target": "Enumerated plus successor technologies.", "walkAway": "A closed list." },
+      "tradeFor": ["structural"],
+      "concede": "Compliance and notification obligations."
+    },
+
+    "access": {
+      "position": "24 hours a day, seven days a week, unescorted, at no additional charge, with a remedy for denial.",
+      "entitlement": "Access governs outage response. An escort requirement is a restoration-time multiplier with a service obligation behind it.",
+      "objections": [
+        { "landlord": "We require an escort for security.",
+          "counter": "Then the escort is at the landlord's cost and must be available within a stated time, failing which access is unescorted. Otherwise the requirement is an outage of unlimited length.",
+          "note": "Making the escort the landlord's obligation rather than a condition on access usually resolves it." },
+        { "landlord": "Our insurance requires it.",
+          "counter": "Ask to see the requirement. It frequently does not say what they think it says.",
+          "note": "" }
+      ],
+      "ladder": { "opening": "24/7 unescorted, no charge, liquidated damages for denial.", "target": "24/7 unescorted, no charge.", "walkAway": "Business hours, or escort as a precondition with no availability obligation." },
+      "tradeFor": [],
+      "concede": "Notification before entry. Not the timing.",
+      "doNotRaiseIf": "The lease already grants 24/7 at no charge. There is nothing to gain and the charge-free element is at risk."
+    },
+
+    "holdover": {
+      "position": "Holdover at the same rent, or a modest uplift, on a month-to-month basis.",
+      "entitlement": "Holdover happens because a renewal was missed administratively, not because anyone intended to occupy without a lease. A punitive multiple prices an error, not a wrong.",
+      "objections": [
+        { "landlord": "Holdover rent is 150 percent. That is standard.",
+          "counter": "It is standard in commercial office where holdover blocks a re-letting. On a cell site there is no queue of replacement tenants and no re-letting being blocked, so the multiple is not compensating a loss.",
+          "note": "" }
+      ],
+      "ladder": { "opening": "Same rent, month to month.", "target": "110 percent.", "walkAway": "150 percent with no cure window." },
+      "tradeFor": ["term"],
+      "concede": "A short cure window in place of the rate."
+    },
+
+    "title": {
+      "position": "A subordination, non-disturbance and attornment agreement from every existing and future mortgagee.",
+      "entitlement": "Without non-disturbance a foreclosure extinguishes the lease and the site with it. This is the largest low-probability risk in the document.",
+      "objections": [
+        { "landlord": "Our lender will not sign.",
+          "counter": "Ask. Most will, and it costs the lender nothing — attornment is protection for them too. If they genuinely refuse, the obligation should at least bind future mortgagees.",
+          "note": "The fallback to future-only is nearly always available and is worth most of the value." },
+        { "landlord": "There is no mortgage on the property.",
+          "counter": "Then agreeing costs nothing today and protects against the refinancing nobody is planning yet.",
+          "note": "Hard to argue with, and it is the version that most often gets signed." }
+      ],
+      "ladder": { "opening": "SNDA from all existing and future mortgagees.", "target": "Mandatory for future, good-faith efforts for existing.", "walkAway": "Good-faith efforts only, with no obligation on future encumbrances." },
+      "tradeFor": ["recording"],
+      "concede": "The form of the agreement."
+    },
+
+    "removal": {
+      "position": "Removal of above-grade equipment within a stated window, with foundations and below-grade improvements remaining, and reasonable wear and tear excepted.",
+      "entitlement": "A full restoration obligation can exceed the value of the remaining term, which turns a termination right into one nobody can afford to use.",
+      "objections": [
+        { "landlord": "Restore the property to its original condition.",
+          "counter": "Original condition on a site occupied for twenty-five years is not a meaningful standard. Offer removal of above-grade equipment, foundations cut to a stated depth, and the surface made good.",
+          "note": "Being specific about depth converts an open-ended obligation into a costed one." }
+      ],
+      "ladder": { "opening": "Above-grade only, 120 days.", "target": "That, with foundations cut below grade.", "walkAway": "Full restoration including subsurface." },
+      "tradeFor": ["termination"],
+      "concede": "The removal window."
+    }
+  }
+}

@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+INTERFERENCE — CURE AND REMEDIES. If interference occurs and continues for more than twenty-four (24) hours following written notice from {{TenantTitle}}, {{LandlordTitle}} will cause the interfering party to cease all operations except for intermittent testing until the interference has been corrected.
+
+If the interference is not corrected within thirty (30) days after such notice, {{TenantTitle}} may, at its option and in addition to any other remedy available at law or in equity, terminate the Agreement upon written notice to {{LandlordTitle}} without penalty or further liability.
+
+{{LandlordTitle}} acknowledges that interference will cause irreparable injury for which damages are an inadequate remedy, and that {{TenantTitle}} is entitled to seek injunctive relief without the necessity of posting bond.

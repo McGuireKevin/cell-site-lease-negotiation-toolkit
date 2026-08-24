@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+SELF-INSURANCE. Notwithstanding any provision of the Agreement to the contrary, {{TenantTitle}} may satisfy any insurance obligation under the Agreement through a program of self-insurance, in whole or in part, for so long as {{TenantTitle}} or its parent maintains a tangible net worth sufficient to support such a program under customary commercial practice.
+
+Where {{TenantTitle}} self-insures, it will be responsible to the same extent, and subject to the same limitations, as if the required insurance had been carried with a third-party insurer.

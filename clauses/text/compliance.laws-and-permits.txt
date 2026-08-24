@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+COMPLIANCE WITH LAW. {{TenantTitle}} will install, operate and maintain the {{EquipmentName}} in compliance with all applicable federal, state and local laws, including the rules and regulations of the Federal Communications Commission and, where applicable, the Federal Aviation Administration, and will obtain and maintain all permits, licences and approvals required for its operations.
+
+{{LandlordTitle}} will comply with all laws applicable to the {{PropertyName}} generally and will not take, or fail to take, any action that would cause the {{EquipmentName}} to be in violation of applicable law or that would jeopardise any permit, licence or approval held by {{TenantTitle}}.

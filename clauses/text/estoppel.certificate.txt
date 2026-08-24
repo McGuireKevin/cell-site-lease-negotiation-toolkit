@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+ESTOPPEL CERTIFICATE. Within twenty (20) days after written request, each party will execute and deliver to the other a written statement certifying: that the Agreement is unmodified and in full force and effect, or if modified, stating the modifications; the commencement and expiration dates and any remaining extension rights; the {{RentName}} then payable and the date through which it has been paid; and whether, to the certifying party's knowledge, any default exists under the Agreement and if so its nature.
+
+Such statement may be relied upon by any prospective purchaser, assignee or lender of the requesting party. Failure to deliver the statement within the period stated will be deemed confirmation that the Agreement is in full force and effect and that no default exists.

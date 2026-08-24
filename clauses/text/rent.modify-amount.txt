@@ -1,0 +1,5 @@
+Section {{sectionMap.rent}} of the Agreement is hereby amended as follows:
+
+Commencing on {{Extension_Term_Start_Date}}, the {{RentName}} shall be {{RentProposal_Words}} (${{RentProposal}}) per month, payable in advance on the first day of each calendar month.
+
+Except as stated in this paragraph, the provisions of the {{LeaseDocument}} governing the time, manner and place of payment of the {{RentName}} remain unchanged.

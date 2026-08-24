@@ -1,0 +1,11 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+COLLATERAL ASSIGNMENT. {{TenantTitle}} may, without {{LandlordTitle}}'s consent, mortgage, pledge or collaterally assign its interest in the Agreement and in the improvements located on the {{AreaName}} to any lender providing financing to {{TenantTitle}} or its affiliates.
+
+Upon written notice to {{LandlordTitle}} identifying a lender and its notice address, {{LandlordTitle}} will:
+
+(a) give that lender a copy of any notice of default given to {{TenantTitle}}, at the same time it is given to {{TenantTitle}}, and no notice of default will be effective against the lender unless so given; and
+
+(b) allow that lender a period of thirty (30) days beyond {{TenantTitle}}'s own cure period in which to cure the default, and accept performance by the lender as performance by {{TenantTitle}}.
+
+{{LandlordTitle}} will not terminate the Agreement while the lender is diligently pursuing a cure, and will, upon request, execute a commercially reasonable consent and estoppel in favour of the lender.

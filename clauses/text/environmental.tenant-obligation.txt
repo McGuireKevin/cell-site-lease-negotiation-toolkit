@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+ENVIRONMENTAL — {{TenantTitle}}. {{TenantTitle}} will not introduce, use or store any hazardous substance on the {{AreaName}} in violation of applicable environmental law, and will indemnify, defend and hold harmless {{LandlordTitle}} from any claim, loss, damage, liability, cost or expense arising from any hazardous substance introduced to the {{AreaName}} by {{TenantTitle}}.
+
+The foregoing does not apply to, and {{LandlordTitle}} expressly consents to, the presence, use and storage of materials customarily used in the operation of a communications facility, including diesel or propane fuel for a stand-by generator, lubricants, and sealed battery back-up systems, in each case handled and stored in accordance with applicable law.

@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+CONDEMNATION. If the whole of the {{AreaName}} is taken by eminent domain, or if so much of the {{PropertyName}} is taken that {{TenantTitle}}'s use of the {{AreaName}} is materially impaired, the Agreement will terminate as of the date title vests in the condemning authority, and any {{RentName}} paid in advance for periods after that date will be refunded.
+
+{{LandlordTitle}} will be entitled to the award attributable to the land and any improvements owned by {{LandlordTitle}}. {{TenantTitle}} will be entitled to pursue a separate award, and to receive any award made, for its equipment, trade fixtures, relocation costs and business interruption, provided such award does not reduce the award payable to {{LandlordTitle}}.
+
+{{LandlordTitle}} will give {{TenantTitle}} written notice of any threatened or commenced condemnation proceeding promptly after becoming aware of it.

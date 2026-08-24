@@ -1,0 +1,1 @@
+Governing Law. This Amendment and the Agreement will be governed by and construed in accordance with the laws of {{Governing_Jurisdiction}}, without regard to its conflict of laws principles. Any action arising out of or relating to the Agreement will be brought in a court of competent jurisdiction located in {{Governing_Jurisdiction}}.

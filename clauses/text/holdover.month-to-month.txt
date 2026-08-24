@@ -1,0 +1,5 @@
+Section {{sectionMap.term}} of the Agreement is hereby amended as follows:
+
+HOLDOVER. If {{TenantTitle}} remains in occupancy of the {{AreaName}} after the expiration or earlier termination of the {{TermName}}, the occupancy shall be a month-to-month tenancy upon the same terms and conditions, including the {{RentName}} payable for the final month of the term, and either party may terminate it upon thirty (30) days prior written notice.
+
+No holdover premium, multiple of {{RentName}}, or damages for holding over shall be payable by {{TenantTitle}}, and no such occupancy shall constitute a default.

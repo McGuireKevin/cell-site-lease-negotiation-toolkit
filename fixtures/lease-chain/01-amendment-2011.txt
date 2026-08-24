@@ -1,0 +1,54 @@
+SYNTHETIC TEST DOCUMENT — NOT A REAL LEASE. See README.md in this folder.
+
+NOTE FOR THE AUDIT: this document TITLES ITSELF "First Amendment" and it IS
+chronologically first. The next document in the chain also titles itself "First
+Amendment" and is chronologically second. That is not an error in this fixture.
+
+================================================================================
+
+              FIRST AMENDMENT TO COMMUNICATIONS SITE LEASE AGREEMENT
+
+THIS FIRST AMENDMENT is dated September 15, 2011, by and between PLACEHOLDER
+HOLDINGS LLC ("Lessor") and SAMPLE WIRELESS INC. ("Lessee").
+
+WHEREAS, the parties entered into a Communications Site Lease Agreement dated
+May 1, 2006 (the "Agreement"); and
+
+WHEREAS, the parties wish to amend the Agreement as set forth below;
+
+NOW THEREFORE the parties agree as follows:
+
+1.  LEASE FEE.
+
+    Effective October 1, 2011, Section 3(a) of the Agreement is deleted in its
+    entirety and replaced with the following:
+
+        "Lessee shall pay to Lessor a lease fee of ONE THOUSAND SIX HUNDRED
+        FIFTY AND NO/100 DOLLARS ($1,650.00) per month (the 'Lease Fee'),
+        payable in advance on the first day of each calendar month."
+
+    For the avoidance of doubt, Section 3(b) of the Agreement remains in full
+    force and effect, and the Lease Fee shall continue to increase by three
+    percent (3%) on each anniversary of the Commencement Date.
+
+2.  PREMISES.
+
+    The Premises is expanded by an additional four hundred (400) square feet of
+    ground space adjacent to the existing compound, as depicted on Exhibit A-1
+    attached hereto. No additional lease fee is payable in respect of the
+    expanded area.
+
+3.  ACCESS.
+
+    Section 5 of the Agreement is amended to provide that Lessee shall have
+    access to the Premises twenty-four (24) hours per day, seven (7) days per
+    week, without prior notice, provided that Lessee shall use reasonable
+    efforts to notify Lessor of any access outside normal business hours.
+
+4.  OTHER TERMS.
+
+    Except as amended herein, the Agreement remains in full force and effect.
+
+LESSOR: PLACEHOLDER HOLDINGS LLC          LESSEE: SAMPLE WIRELESS INC.
+
+By: ______________________                By: ______________________

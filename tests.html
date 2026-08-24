@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lease engine tests</title>
+<style>
+ :root{color-scheme:dark}
+ body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      margin:0;background:#14171a;color:#e7eaef}
+ .wrap{max-width:1100px;margin:0 auto;padding:24px 20px 80px}
+ h1{font-size:20px;margin:0 0 4px}
+ .sub{color:#9aa3b0;font-size:12.5px;margin-bottom:18px}
+ #summary{font:700 17px monospace;padding:14px 18px;border-radius:8px;margin-bottom:20px;border:2px solid}
+ .allpass{background:#15301f;border-color:#4ec98a;color:#7fd9a8}
+ .anyfail{background:#3a1f1d;border-color:#f2837a;color:#f3a9a2}
+ table{border-collapse:collapse;width:100%;font-size:13px}
+ th,td{text-align:left;padding:7px 10px;border-bottom:1px solid #2e343b;vertical-align:top}
+ th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#9aa3b0;background:#22272c}
+ td.n{font-family:ui-monospace,Consolas,monospace;text-align:right;white-space:nowrap}
+ .pass{color:#4ec98a;font-weight:700}
+ .fail{color:#f2837a;font-weight:700}
+ tr.failrow{background:#2a1a19}
+ .why{color:#9aa3b0;font-size:12px;max-width:430px}
+ .grp td{background:#1c2024;font-weight:700;color:#6aa8f0;font-size:12px;
+         text-transform:uppercase;letter-spacing:.05em}
+ code{font-family:ui-monospace,Consolas,monospace;background:#22272c;padding:1px 4px;border-radius:3px}
+ .note{background:#22272c;border-left:3px solid #6aa8f0;padding:10px 14px;border-radius:5px;
+       margin-bottom:18px;font-size:12.5px;color:#c3cad3}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Lease engine tests</h1>
+<div class="sub">Opens from disk. No server, no install. Exercises <code>src/lease-engine.js</code> &mdash;
+the same file the comparator loads, not a copy.</div>
+
+<div class="note">
+Every expected value below is <b>hand-checkable</b>. Where a figure is not obvious, the
+&ldquo;expected&rdquo; column shows the arithmetic rather than just the answer, so a wrong number
+is visible without running anything.
+</div>
+
+<div id="summary">running&hellip;</div>
+<table id="results"><thead>
+<tr><th style="width:34px">#</th><th>Case</th><th class="n">Expected</th><th class="n">Actual</th>
+<th style="width:52px">Result</th><th>Why it matters</th></tr>
+</thead><tbody></tbody></table>
+</div>
+
+<script src="src/lease-engine.js"></script>
+<script src="src/lease-validate.js"></script>
+<script src="src/clause-assembler.js"></script>
+<script src="src/redline-compare.js"></script>
+<script src="src/final-report.js"></script>
+<script src="src/docx-style.js"></script>
+<script src="src/docx-writer.js"></script>
+<script src="src/docx-read.js"></script>
+<script src="src/docx-conform.js"></script>
+<script src="src/market-derive.js"></script>
+<script src="market/market-data.js"></script>
+<!-- The SHIPPED clause data, so the library and its impact map are checked
+     against each other rather than against a fixture that agrees by
+     construction. 136 KB, and worth it for that. -->
+<script src="clauses/clause-data.js"></script>
+<script>
+/* =============================================================================
+   Test harness. Deliberately tiny — no framework, no assertion library, and
+   nothing to install. A case declares what it expects and why it matters; the
+   "why" column is there so a failure tells you what broke in the world, not
+   just which number moved.
+   ============================================================================= */
+const CASES=[], GROUPS=[];
+function group(name){ GROUPS.push({name:name,at:CASES.length}); }
+function test(name, expected, actualFn, why, cmp){
+  CASES.push({name:name, expected:expected, actualFn:actualFn, why:why||'', cmp:cmp});
+}
+/* Money compares to the cent. Anything tighter fails on binary float noise
+   that no invoice would ever show. */
+const money = (a,b)=>Math.abs(a-b) < 0.005;
+const near  = (a,b)=>Math.abs(a-b) < 1e-9;
+
+/* ---- fixtures -------------------------------------------------------------
+   Synthetic throughout: round numbers, no real site, no real party. */
+function lease(o){
+  return Object.assign({
+    termEnd:'', baseRent:5000, rentBasis:'monthly',
+    cadenceMonths:1, firstPaymentDate:'', paymentTiming:'advance',
+    prorationBasis:'prorated', prorationConvention:'actual_month',
+    escalators:[], oneTimePayments:[]
+  }, o||{});
+}
+function glob(o){
+  return Object.assign({
+    windowStart:'', windowEnd:'', pvReferenceDate:'',
+    discountRate:0, assumedCpi:0.03, baselineMode:'expire'
+  }, o||{});
+}
+/* Engine-shape escalator: `rate` is already a FRACTION for percentages and
+   DOLLARS for fixed_amount. normEsc() does that conversion in the UI; tests
+   call the engine directly, so they pass engine shape. */
+function esc(o){
+  return Object.assign({
+    appliesFrom:'', appliesTo:'', type:'fixed_pct', rate:0.03,
+    cadenceMonths:12, firstAdjustment:'', compounding:'on_prior',
+    floorPct:null, capPct:null
+  }, o||{});
+}
+const payDates = r => r.rows.filter(x=>!x.oneTime).map(x=>fd(x.payDate)).join(' ');
+
+/* =============================================================================
+   PRORATION
+   ============================================================================= */
+group('Proration and day-count');
+
+test('Prorated part-month, actual / days in month',
+  '36290.32  = 7 x 5000 + 5000 x 8/31',
+  ()=>{
+    const r = computeScenario(
+      lease({termEnd:'2045-08-08'}), null,
+      glob({windowStart:'2045-01-01', windowEnd:'2045-08-08'}));
+    return r.totalNominal.toFixed(2)+'  = 7 x 5000 + 5000 x 8/31';
+  },
+  'Jan-Jul bill in full; August is 8 days of a 31-day month. If this drifts, every '+
+  'partial period in every scenario is wrong.');
+
+test('Same window billed as full periods',
+  '40000.00  = 8 x 5000',
+  ()=>{
+    const r = computeScenario(
+      lease({termEnd:'2045-08-08', prorationBasis:'full_period'}), null,
+      glob({windowStart:'2045-01-01', windowEnd:'2045-08-08'}));
+    return r.totalNominal.toFixed(2)+'  = 8 x 5000';
+  },
+  'A lease that does not prorate bills August in full. The 1,290.32 difference '+
+  'against the case above is exactly what the proration basis buys.');
+
+test('30 / 360 day count across a month end',
+  '31 days -> 5166.67',
+  ()=>{
+    const d = days360(pd('2025-01-31'), pd('2025-03-01'));
+    const v = prorate(5000, pd('2025-01-31'), pd('2025-03-01'), 'thirty_360');
+    return d+' days -> '+v.toFixed(2);
+  },
+  'US 30/360: d1=31 becomes 30, so Jan 31 to Mar 1 is 60 - 29 = 31 days, not 29. '+
+  'Getting this backwards silently overcharges by two days of rent.');
+
+test('Actual / 365 over a full year equals twelve monthly payments',
+  '60000.00',
+  ()=>prorate(5000, pd('2025-01-01'), pd('2026-01-01'), 'actual_365').toFixed(2),
+  'The annualisation factor is rate x 12 x days/365. If the x12 is dropped the '+
+  'figure comes out 12x too small and still looks like a plausible rent.');
+
+/* =============================================================================
+   PAYMENT DAY RULE — the end-of-month anchor
+   ============================================================================= */
+group('End-of-month payment anchor');
+
+test('anchored: rent due the 31st returns to the 31st after February',
+  '2025-01-31 2025-02-28 2025-03-31 2025-04-30 2025-05-31 2025-06-30',
+  ()=>payDates(computeScenario(
+      lease({termEnd:'2025-06-30', firstPaymentDate:'2025-01-31', paymentDayRule:'anchored'}), null,
+      glob({windowStart:'2025-01-31', windowEnd:'2025-06-30'}))),
+  'February clamps the day to 28; March must go back to 31. buildRateEvents has '+
+  'always anchored this way -- buildPeriods did not, so the two disagreed.');
+
+test('clamped (legacy): the day never recovers after February',
+  '2025-01-31 2025-02-28 2025-03-28 2025-04-28 2025-05-28 2025-06-28',
+  ()=>payDates(computeScenario(
+      lease({termEnd:'2025-06-30', firstPaymentDate:'2025-01-31', paymentDayRule:'clamped'}), null,
+      glob({windowStart:'2025-01-31', windowEnd:'2025-06-30'}))),
+  'Retained so a file saved before the fix can reproduce its old numbers exactly. '+
+  'Not a lease convention -- no lease says "the 31st, or the 28th once February happens".');
+
+test('last_day: month-end anchor tracks each month end',
+  '2025-02-28 2025-03-31 2025-04-30 2025-05-31 2025-06-30',
+  ()=>payDates(computeScenario(
+      lease({termEnd:'2025-06-30', firstPaymentDate:'2025-02-28', paymentDayRule:'last_day'}), null,
+      glob({windowStart:'2025-02-28', windowEnd:'2025-06-30'}))),
+  'Anchored on Feb 28 would give the 28th of every month, because 28 exists '+
+  'everywhere. "Last day of the month" is a different clause and a different schedule.');
+
+test('The anchor rule moves real money: 3% step on 31 Mar, billed full-period',
+  'anchored 20300.00 - clamped 20150.00 = 150.00',
+  ()=>{
+    const build = rule => computeScenario(
+      lease({termEnd:'2025-04-30', firstPaymentDate:'2025-01-31', paymentDayRule:rule,
+             prorationBasis:'full_period',
+             escalators:[esc({rate:0.03, cadenceMonths:12, firstAdjustment:'2025-03-31'})]}),
+      null, glob({windowStart:'2025-01-31', windowEnd:'2025-04-30'}));
+    const a = build('anchored').totalNominal, c = build('clamped').totalNominal;
+    return 'anchored '+a.toFixed(2)+' - clamped '+c.toFixed(2)+' = '+(a-c).toFixed(2);
+  },
+  'Under clamped, the period starting 28 Mar predates the 31 Mar step, so a whole '+
+  'month bills at the old rate and the increase is deferred. One month of a 3% '+
+  'escalator on 5,000 -- a clean-looking number and a wrong invoice.');
+
+/* =============================================================================
+   ESCALATION
+   ============================================================================= */
+group('Escalation');
+
+test('Compounding on prior vs on base, 3% applied twice',
+  'on_prior 5304.50 | on_base 5300.00',
+  ()=>{
+    const run = mode => {
+      const ev = buildRateEvents(pd('2025-01-01'), pd('2028-01-01'), 5000,
+        [esc({rate:0.03, cadenceMonths:12, firstAdjustment:'2026-01-01', compounding:mode})],
+        glob(), 'x');
+      return rateOn(ev, pd('2027-06-01'));
+    };
+    return 'on_prior '+run('on_prior').toFixed(2)+' | on_base '+run('on_base').toFixed(2);
+  },
+  'On prior compounds (5000 x 1.03 x 1.03). On base does not (5000 x (1 + 0.03 x 2)). '+
+  'Where the clause is ambiguous the difference compounds over a 20-year term.');
+
+test('CPI escalator respects its cap',
+  '5125.00  = 5000 x 1.025, capped from 3%',
+  ()=>{
+    const ev = buildRateEvents(pd('2025-01-01'), pd('2027-01-01'), 5000,
+      [esc({type:'cpi', cadenceMonths:12, firstAdjustment:'2026-01-01',
+            floorPct:0.02, capPct:0.025})],
+      glob({assumedCpi:0.03}), 'x');
+    return rateOn(ev, pd('2026-06-01')).toFixed(2)+'  = 5000 x 1.025, capped from 3%';
+  },
+  'Assumed CPI is 3%, the floor 2% and the cap 2.5%. The cap has to bind after the '+
+  'floor, not before, or a capped escalator quietly escalates at the full rate.');
+
+/* =============================================================================
+   MID-TERM RENT MODIFICATION (equipment)
+   ============================================================================= */
+group('Mid-term rent modification');
+
+test('One-time dollar step is permanent: +400/mo from 1 Jun',
+  '62800.00  = 5 x 5000 + 7 x 5400',
+  ()=>{
+    const r = computeScenario(
+      lease({termEnd:'2026-12-31',
+             escalators:[esc({type:'fixed_amount', rate:400, cadenceMonths:0,
+                              firstAdjustment:'2026-06-01'})]}),
+      null, glob({windowStart:'2026-01-01', windowEnd:'2026-12-31'}));
+    return r.totalNominal.toFixed(2)+'  = 5 x 5000 + 7 x 5400';
+  },
+  'This is how an equipment addition is expressed -- cadence 0, fixed_amount. It steps '+
+  'once and stays. There is no separate event type and none is needed.');
+
+test('KNOWN LIMIT: a step dated on the regime start is dropped',
+  '60000.00  = 12 x 5000, step ignored',
+  ()=>{
+    const r = computeScenario(
+      lease({termEnd:'2026-12-31',
+             escalators:[esc({type:'fixed_amount', rate:400, cadenceMonths:0,
+                              firstAdjustment:'2026-01-01'})]}),
+      null, glob({windowStart:'2026-01-01', windowEnd:'2026-12-31'}));
+    return r.totalNominal.toFixed(2)+'  = 12 x 5000, step ignored';
+  },
+  'buildRateEvents requires anchor > start, so a step on day one silently does nothing. '+
+  'Pinned deliberately: if this ever changes it should be a decision, not a surprise. '+
+  'Workaround -- fold it into baseRent instead.');
+
+test('KNOWN LIMIT: same-date escalators apply in row order',
+  'pct-then-dollar 5900.00 | dollar-then-pct 5940.00',
+  ()=>{
+    const run = rows => {
+      const ev = buildRateEvents(pd('2026-01-01'), pd('2027-01-01'), 5000, rows, glob(), 'x');
+      return rateOn(ev, pd('2026-07-01'));
+    };
+    const pct = esc({type:'fixed_pct',    rate:0.10, cadenceMonths:0, firstAdjustment:'2026-06-01'});
+    const amt = esc({type:'fixed_amount', rate:400,  cadenceMonths:0, firstAdjustment:'2026-06-01'});
+    return 'pct-then-dollar '+run([pct,amt]).toFixed(2)+
+         ' | dollar-then-pct '+run([amt,pct]).toFixed(2);
+  },
+  '5000 x 1.10 + 400 = 5900, but 5000 + 400 then x 1.10 = 5940. A 40/month difference '+
+  'decided by which row is listed first. Order the rows deliberately.');
+
+/* =============================================================================
+   WINDOW EDGES
+   ============================================================================= */
+group('Window edges');
+
+test('A window starting mid-cycle keeps its opening stub',
+  '3 payments, first 2025-01-15, stub',
+  ()=>{
+    const r = computeScenario(
+      lease({termEnd:'2025-03-31', firstPaymentDate:'2025-01-01'}), null,
+      glob({windowStart:'2025-01-15', windowEnd:'2025-03-31'}));
+    const f = r.rows[0];
+    return r.rows.length+' payments, first '+fd(f.payDate)+(f.stub?', stub':', NOT stub');
+  },
+  'The window opens mid-period. Without the stub, rent from the 15th to the 1st belongs '+
+  'to a period whose pay date sits outside the window and is dropped from the totals '+
+  'entirely -- a silent undercount.');
+
+test('Payments past the window end are excluded and reported',
+  'total 15000.00, 1 warning',
+  ()=>{
+    const r = computeScenario(
+      lease({termEnd:'2025-12-31'}), null,
+      glob({windowStart:'2025-01-01', windowEnd:'2025-03-31'}));
+    const clipped = r.warnings.filter(w=>/fall outside the analysis window/.test(w)).length;
+    return 'total '+r.totalNominal.toFixed(2)+', '+clipped+' warning';
+  },
+  'Clipping is correct, but silent clipping is not. Nine excluded payments have to '+
+  'surface as a warning or a scenario looks cheap for the wrong reason.');
+
+/* =============================================================================
+   OPTIONS-AWARE BASELINE
+   =============================================================================
+   $5,000/month flat, no escalator, so every total is just a month count x 5000
+   and can be checked in your head. Current term ends 2026-12-31; the window
+   runs 2026-01-01 to 2030-12-31, which is 60 months.                         */
+group('Baseline — how far the right to be there reaches');
+
+const base5k = o => lease(Object.assign({termEnd:'2026-12-31'}, o||{}));
+const win5y  = o => glob(Object.assign({windowStart:'2026-01-01', windowEnd:'2030-12-31',
+                                        baselineMode:'continue'}, o||{}));
+const warned = (r,rx) => r.warnings.some(w=>rx.test(w));
+
+test('No final term end: continues to the window edge, as before',
+  '300000.00  = 60 x 5000',
+  ()=>computeScenario(base5k(), null, win5y()).totalNominal.toFixed(2)+'  = 60 x 5000',
+  'The legacy behaviour, and still the right default when the options are unknown. It keeps a '+
+  'proposal that extends the term from looking expensive purely because it covers more time.');
+
+test('Final term end inside the window: the baseline stops there',
+  '180000.00  = 36 x 5000',
+  ()=>computeScenario(base5k({finalTermEnd:'2028-12-31'}), null, win5y())
+        .totalNominal.toFixed(2)+'  = 36 x 5000',
+  'Past the last option there is no contractual right to be on site at all. Continuing anyway '+
+  'would price a renewal nobody has agreed to and quietly inflate the do-nothing case.');
+
+test('...and says so, rather than leaving the gap silent',
+  'warned',
+  ()=>warned(computeScenario(base5k({finalTermEnd:'2028-12-31'}), null, win5y()),
+             /Options run out/) ? 'warned' : 'NOT WARNED',
+  'A baseline that stops two years early understates against any proposal covering that span. '+
+  'Stopping is correct; stopping quietly is not.');
+
+test('Final term end beyond the window: no effect, no warning',
+  '300000.00, no warning',
+  ()=>{ const r=computeScenario(base5k({finalTermEnd:'2035-12-31'}), null, win5y());
+        return r.totalNominal.toFixed(2)+(warned(r,/Options run out/)?', WARNED':', no warning'); },
+  'Options that outlast the window neither shorten nor extend it. Identical to the no-options '+
+  'case, which is what makes the field safe to fill in.');
+
+test('Obligation-ends baseline ignores the option chain',
+  '60000.00  = 12 x 5000',
+  ()=>computeScenario(base5k({finalTermEnd:'2035-12-31'}), null, win5y({baselineMode:'expire'}))
+        .totalNominal.toFixed(2)+'  = 12 x 5000',
+  '"Obligation ends at expiry" means the stated expiry. Options are rights not yet exercised, so '+
+  'they have no place in a baseline that assumes nothing is exercised.');
+
+test('Final term end before the term end is caught',
+  'warned',
+  ()=>warned(computeScenario(base5k({finalTermEnd:'2025-12-31'}), null, win5y()),
+             /cannot precede the current expiry/) ? 'warned' : 'NOT CAUGHT',
+  'The final term end is the last day with every option exercised, so it cannot fall before the '+
+  'term now running ends. One of the two dates has been mistyped.');
+
+test('The option chain does NOT drive escalation',
+  'with 5500.00 | without 5500.00',
+  ()=>{
+    const esc60 = esc({rate:0.10, cadenceMonths:60, firstAdjustment:'2027-01-01'});
+    const rate = () => {
+      const ev = buildRateEvents(pd('2026-01-01'), pd('2032-01-01'), 5000, [esc60], glob(), 'x');
+      return rateOn(ev, pd('2027-06-01'));
+    };
+    return 'with '+rate().toFixed(2)+' | without '+rate().toFixed(2);
+  },
+  'Escalator rows stay the ONLY place escalation is expressed. A lease stepping 10% at each '+
+  'five-year option is a cadence-60 escalator; deriving the same steps from the option chain '+
+  'would be a second source of truth for the most consequential number in the model.');
+
+test('A scenario that cannot be computed says why',
+  'refused: term end required',
+  ()=>{ /* A site in holdover has no stated term end. Not hypothetical — a real
+           1997 lease whose renewal terms are all exhausted has no term running,
+           and the literal truth is a blank. */
+        const out = {};
+        const r = computeScenario(lease({termEnd:''}), null,
+                                  glob({windowStart:'2026-09-01', windowEnd:'2036-09-01'}), null, out);
+        if(r) return 'DID NOT REFUSE';
+        return out.refusal && /term end is required/i.test(out.refusal.join(' '))
+             ? 'refused: term end required' : 'NO REASON GIVEN: '+JSON.stringify(out.refusal); },
+  'buildRegimes knows exactly why it refused. Returning a bare null threw that away, so the one '+
+  'case where the user most needs the message produced none — the comparator showed blank columns '+
+  'and no explanation. Opt-in via an out parameter because every existing caller tests '+
+  '`if(!result)`, and a truthy refusal would render as 0.00.');
+
+/* =============================================================================
+   VALIDATION — the malformed-input path
+   =============================================================================
+   These build the bad file inline rather than fetching fixtures/, because
+   fetch() and XHR are blocked over file:// even for a file in the same
+   directory. The fixtures on disk carry the same values so they stay in step;
+   fixtures/synthetic-malformed.deal.json is the one you load by hand to see
+   the dialog.                                                                */
+group('Validation — malformed input');
+
+/* A minimum valid file, cloned per case so one test cannot leak into another. */
+function goodFile(){
+  return JSON.parse(JSON.stringify({
+    schemaVersion:'1.0', confidential:false,
+    glob:{projectName:'ok',windowStart:'2026-01-01',windowEnd:'2036-01-01',
+          pvReferenceDate:'2026-01-01',discountRatePct:6.5,assumedCpiPct:3,baselineMode:'continue'},
+    current:{termEnd:'2030-04-30',baseRent:2100,rentBasis:'monthly',cadenceMonths:1,
+             firstPaymentDate:'2026-01-01',paymentTiming:'advance',prorationBasis:'prorated',
+             prorationConvention:'actual_month',paymentDayRule:'anchored',
+             escalators:[],oneTimePayments:[]},
+    proposals:[{id:'p1',label:'P',effectiveDate:'2026-05-01',rentMode:'absolute',rentValue:1850,
+                rentBasis:'monthly',termEnd:'2041-04-30',cadenceMonths:1,firstPaymentDate:'2026-05-01',
+                paymentTiming:'advance',prorationBasis:'prorated',prorationConvention:'actual_month',
+                paymentDayRule:'anchored',escalators:[],oneTimePayments:[]}]
+  }));
+}
+const vp = mutate => { const f=goodFile(); mutate(f); return validateProject(f); };
+
+test('A clean file produces nothing',
+  '0 errors, 0 warnings',
+  ()=>{ const v=validateProject(goodFile());
+        return v.errors.length+' errors, '+v.warnings.length+' warnings'; },
+  'The baseline. If this ever reports something, every other case below is suspect.');
+
+/* =============================================================================
+   MARKET RATES — inputs in, bands out
+
+   The file replaced a spreadsheet that stored derived values beside their own
+   inputs. These cases pin the derivation and the refusals.
+   ============================================================================= */
+group('Market rates — derivation');
+
+function ratesFile(mut){
+  const m = {
+    schemaVersion:'1.0', asOf:'2026-01-01', label:'test', stance:'midpoint',
+    derivation:{lowFactor:0.95, highFactor:0.70, midPosition:0.45},
+    thresholds:{above:1.25, below:0.80},
+    tiers:[{id:'tier-2', label:'Tier 2 - Major metro', multiplier:1, rooftopPremium:1.2},
+           {id:'tier-4', label:'Tier 4 - Small metro / rural', multiplier:0.65, rooftopPremium:1}],
+    metros:[{metro:'Dallas-Fort Worth, TX', tier:'tier-2', publishedLow:900, publishedHigh:3000, basis:'published'},
+            {metro:'Suburban / exurban', tier:'tier-4', publishedLow:500, publishedHigh:1400, basis:'benchmark'}],
+    equipmentAdders:[{category:'ANTENNAS', item:'Panel antenna', baseline:90, tierScaled:true},
+                     {category:'OTHER', item:'Small cell node', baseline:275, tierScaled:false}],
+    spaceRates:[{spaceType:'Ground compound', unit:'$ / sq ft / month', baseline:2.5}]
+  };
+  if(mut) mut(m);
+  return m;
+}
+const derived = () => { const M = deriveMarket(ratesFile());
+                        return {M:M, c:n=>M.metroCols.indexOf(n)}; };
+
+test('The band comes out of the published figures and the factors',
+  'low 855.00 high 2100.00',
+  ()=>{ const {M,c} = derived(); const r = M.metros[0];
+        return 'low '+r[c('groundLow')].toFixed(2)+' high '+r[c('groundHigh')].toFixed(2); },
+  '900 × 0.95 and 3000 × 0.70 — hand-checkable, and the point of the format: the file carries 900 '+
+  'and 3000, never 855 and 2100.');
+
+test('Mid sits where midPosition puts it',
+  '1415.25',
+  ()=>{ const {M,c} = derived(); return M.metros[0][c('groundMid')].toFixed(2); },
+  '855 + 0.45 × (2100 − 855) = 1415.25. One number in the file moves the whole dataset, rather '+
+  'than re-exporting forty rows.');
+
+test('Rooftop is the tier premium on the mid',
+  '1698.30',
+  ()=>{ const {M,c} = derived(); return M.metros[0][c('rooftopMid')].toFixed(2); },
+  '1415.25 × 1.2. The old CSV stored a rooftop figure per metro with no stated relationship to '+
+  'anything, so the same premium appeared as 41 unexplained numbers.');
+
+test('A conservative stance moves every band without touching a row',
+  'mid 1041.75',
+  ()=>{ const M = deriveMarket(ratesFile(m=>m.derivation.midPosition=0.15));
+        const c = n=>M.metroCols.indexOf(n);
+        return 'mid '+M.metros[0][c('groundMid')].toFixed(2); },
+  '855 + 0.15 × 1245. midPosition is the lever that places the recommended figure inside the '+
+  'range: at 0.15 the recommendation sits 15% of the way up from the low toward the high.');
+
+test('An adder scales by the tier multiplier',
+  '58.50',
+  ()=>marketAdderAt(deriveMarket(ratesFile()).equipment[0], 0.65).toFixed(2),
+  '90 × 0.65. The spreadsheet stored this in a column, along with four more that were also the '+
+  'baseline times a multiplier — and the tool never read any of them.');
+
+test('tierScaled:false means the multiplier does not apply',
+  '275.00',
+  ()=>marketAdderAt(deriveMarket(ratesFile()).equipment[1], 0.65).toFixed(2),
+  'The CSV had a row whose own note said the multiplier did not suit it, while its numbers applied '+
+  'the multiplier anyway. Stating it in the file makes the note enforceable.');
+
+group('Market rates — refusals');
+
+const mErr = mut => validateMarket(ratesFile(mut)).errors;
+
+test('A clean file produces nothing',
+  '0 errors',
+  ()=>validateMarket(ratesFile()).errors.length+' errors',
+  '');
+
+test('An inside-out band is refused',
+  'caught',
+  ()=>mErr(m=>{ m.metros[0].publishedLow=3000; m.metros[0].publishedHigh=900; })
+      .some(e=>/inside out/.test(e))?'caught':'MISSED',
+  'Every figure derived from it would be wrong while looking perfectly reasonable — a low above a '+
+  'high still produces a number.');
+
+test('A metro pointing at an undefined tier is refused',
+  'caught',
+  ()=>mErr(m=>m.metros[0].tier='tier-9').some(e=>/not defined/.test(e))?'caught':'MISSED',
+  'It would otherwise fall back to a multiplier of 1 and quote a Tier 1 city at Tier 2 rates.');
+
+test('A duplicate metro is refused',
+  'caught',
+  ()=>mErr(m=>m.metros[1].metro='Dallas-Fort Worth, TX').some(e=>/twice/.test(e))?'caught':'MISSED',
+  'Which row wins would be whichever happened to be indexed — arbitrary, and invisible.');
+
+test('A missing asOf is refused',
+  'caught',
+  ()=>mErr(m=>delete m.asOf).some(e=>/asOf is required/.test(e))?'caught':'MISSED',
+  'Market data ages. A band with no date cannot be judged stale, which is how a four-year-old '+
+  'figure gets quoted as current.');
+
+test('Stale data warns rather than blocking',
+  'warned, still loads',
+  ()=>{ const v = validateMarket(ratesFile(m=>m.asOf='2019-01-01'));
+        return (v.warnings.some(w=>/months old/.test(w))?'warned':'NOT WARNED')+
+               ', '+(v.errors.length?'BLOCKED':'still loads'); },
+  'Old data is often all there is. Refusing it would push people to fake the date, which is worse '+
+  'than knowing it is old.');
+
+test('midPosition outside 0–1 is refused',
+  'caught',
+  ()=>mErr(m=>m.derivation.midPosition=1.5).some(e=>/midPosition/.test(e))?'caught':'MISSED',
+  'It is a position between the low and the high, not a multiplier.');
+
+test('The shipped file is valid and conservative',
+  'valid, conservative',
+  ()=>{ if(typeof MARKET_RATES === 'undefined') return 'BUNDLE NOT LOADED';
+        const v = validateMarket(MARKET_RATES);
+        return (v.errors.length ? v.errors.length+' ERRORS' : 'valid') + ', ' + MARKET_RATES.stance; },
+  'The SHIPPED file, not a fixture. This repository is public, and the file states its own stance '+
+  'and derivation, so a reader can see where every band came from.');
+
+test('Only the shipped file claims to be illustrative',
+  'shipped yes, user file no',
+  ()=>{ if(typeof MARKET_RATES === 'undefined') return 'BUNDLE NOT LOADED';
+        const shipped = deriveMarket(MARKET_RATES).illustrative;
+        const mine = deriveMarket(ratesFile(m=>{ m.stance = 'conservative';
+                                                 m.derivation.midPosition = 0.15; })).illustrative;
+        return 'shipped ' + (shipped ? 'yes' : 'no') + ', user file ' + (mine ? 'yes' : 'no'); },
+  'The banner reading "this is the bundled illustrative file" keys off an EXPLICIT marker, never '+
+  'off the stance. conservative is the natural choice for a cautious user building their own '+
+  'rates, and telling them their own file is ours would discredit their numbers with our warning.');
+
+test('The shipped file carries no row derived by analogy',
+  'none',
+  ()=>{ if(typeof MARKET_RATES === 'undefined') return 'BUNDLE NOT LOADED';
+        const n = MARKET_RATES.metros.filter(m=>m.basis==='analogy').length;
+        return n ? n+' analogy rows' : 'none'; },
+  'An extrapolation from a neighbouring market is somebody\'s judgement. In a private file that is '+
+  'fine and useful; in a public one it reads as data.');
+
+/* =============================================================================
+   FORMATTING CONFORMANCE — what came back, measured against the house style
+
+   The reader itself is async and needs a real file, so it is exercised by a
+   scratch harness against a genuinely damaged .docx. These cases pin the
+   MEASUREMENT, which is the part with judgement in it.
+   ============================================================================= */
+group('Formatting conformance');
+
+/* A document as our writer produces it: named styles, numPr, nothing else. */
+function cleanDoc(){
+  return {paragraphs:[
+    {index:0, style:'Heading1', text:'FIRST AMENDMENT', direct:[], overrides:{}, numId:null, literalNumber:null},
+    {index:1, style:'BodyText', text:'THIS AMENDMENT is entered into.', direct:[], overrides:{}, numId:null, literalNumber:null},
+    {index:2, style:'AmendmentSection', text:'Rent. The Annual Rent shall be reduced.', direct:[], overrides:{}, numId:'1', literalNumber:null},
+    {index:3, style:'AmendmentSection', text:'Termination. On notice.', direct:[], overrides:{}, numId:'1', literalNumber:null}
+  ], sectPr:{widthTw:12240, heightTw:15840, marginTw:{top:1820,right:1100,bottom:1500,left:1380}}};
+}
+
+test('A document we produced conforms',
+  '0 findings',
+  ()=>conformDocx(cleanDoc(), DOCX_FORMAT).findings.length+' findings',
+  'The baseline, and it is the invariant restated: our own writer emits named styles and nothing '+
+  'else, so a clean round trip has to report nothing. If this ever fires, the measurement has '+
+  'stopped meaning anything.');
+
+test('A section that lost its list membership is high risk',
+  'numbering-lost / high',
+  ()=>{ const d=cleanDoc(); d.paragraphs[3].numId=null;
+        const f=conformDocx(d,DOCX_FORMAT).findings.find(x=>x.signal==='numbering-lost');
+        return f? f.signal+' / '+f.risk : 'MISSED'; },
+  'THE ONE WITH TEETH. The paragraph still looks like a section and no longer numbers itself, so '+
+  'everything after it renumbers and every cross-reference to a later section points at the wrong '+
+  'clause. The document is then wrong in a way that reads as clean.');
+
+test('A number typed over an automatic one is caught',
+  'numbering-doubled / high',
+  ()=>{ const d=cleanDoc(); d.paragraphs[2].literalNumber='3.';
+        const f=conformDocx(d,DOCX_FORMAT).findings.find(x=>x.signal==='numbering-doubled');
+        return f? f.signal+' / '+f.risk : 'MISSED'; },
+  'Reads as "3. 4. Termination". It usually means someone fixed a renumbering without realising it '+
+  'was automatic, which guarantees it drifts again on the next edit.');
+
+test('Sections split across two lists are caught',
+  'numbering-split',
+  ()=>{ const d=cleanDoc(); d.paragraphs[3].numId='7';
+        return conformDocx(d,DOCX_FORMAT).findings.some(x=>x.signal==='numbering-split')
+             ? 'numbering-split':'MISSED'; },
+  'Copy-paste between documents forks the list definition, and a forked list restarts at 1. The '+
+  'document then counts 1, 2, 1 and looks right until somebody reads the numbers.');
+
+test('Direct formatting is reported with a readable name',
+  'alignment',
+  ()=>{ const d=cleanDoc(); d.paragraphs[1].direct=['pPr/jc'];
+        const f=conformDocx(d,DOCX_FORMAT).findings.find(x=>x.signal==='direct-formatting');
+        return f && /alignment/.test(f.detail) ? 'alignment' : 'RAW OR MISSED: '+(f?f.detail:'none'); },
+  '"pPr/jc" tells a reviewer nothing. "alignment" tells them where to look, and a finding nobody '+
+  'can act on is one they learn to skip.');
+
+test('A changed font is caught with both values',
+  'Calibri and Times New Roman named',
+  ()=>{ const d=cleanDoc(); d.paragraphs[1].overrides={font:'Calibri'};
+        const f=conformDocx(d,DOCX_FORMAT).findings.find(x=>x.signal==='font-changed');
+        return f && /Calibri/.test(f.detail) && /Times New Roman/.test(f.detail)
+             ? 'Calibri and Times New Roman named' : 'MISSED: '+(f?f.detail:'none'); },
+  'Naming only the wrong value makes the reader go and look up what it should have been.');
+
+test('A style we never sent is caught',
+  'foreign-style',
+  ()=>{ const d=cleanDoc(); d.paragraphs[1].style='ListParagraph';
+        return conformDocx(d,DOCX_FORMAT).findings.some(x=>x.signal==='foreign-style')
+             ? 'foreign-style':'MISSED'; },
+  'A style the document did not start with arrived with pasted content and brought that '+
+  'document\'s formatting with it. ListParagraph is the usual one, because it is what Word applies '+
+  'to anything pasted from a numbered list.');
+
+test('Changed margins are reported in inches, not twips',
+  'inches',
+  ()=>{ const d=cleanDoc(); d.paragraphs[1].direct=[]; d.sectPr.marginTw.left=1440;
+        const f=conformDocx(d,DOCX_FORMAT).findings.find(x=>x.signal==='page-setup-changed');
+        return f && /1\.00"/.test(f.detail) ? 'inches' : 'MISSED OR RAW: '+(f?f.detail:'none'); },
+  'Nobody thinks in twips. 1380 versus 1440 is meaningless; 0.96" versus 1.00" is a decision.');
+
+test('Numbering outranks cosmetics in the ordering',
+  'numbering first',
+  ()=>{ const d=cleanDoc();
+        d.paragraphs[1].direct=['pPr/jc'];
+        d.paragraphs[3].numId=null;
+        return conformDocx(d,DOCX_FORMAT).findings[0].signal.indexOf('numbering')===0
+             ? 'numbering first':'COSMETIC FIRST'; },
+  'A reviewer reads from the top. Broken numbering makes the document wrong; a stray alignment '+
+  'makes it untidy, and the two must not arrive in the order they were detected.');
+
+test('Formatting findings become deviations that merge like any other',
+  'same count twice, kind formatting',
+  ()=>{ const d=cleanDoc(); d.paragraphs[3].numId=null;
+        const c=conformDocx(d,DOCX_FORMAT);
+        const one=mergeDeviations([], conformToDeviations(c,{round:1}));
+        const two=mergeDeviations(one.deviations, conformToDeviations(c,{round:1}));
+        return (one.deviations.length===two.deviations.length?'same count twice':'DUPLICATED')+
+               ', kind '+one.deviations[0].kind; },
+  'They go through the same accept/reject discipline as a substantive change, because both are '+
+  'changes somebody has to have seen. `kind` is what lets the final report group them.');
+
+/* =============================================================================
+   PLAYBOOK — stage 3.5
+
+   The playbook is the first block that carries ADVICE rather than findings, and
+   the first that carries figures copied from somewhere else. Both need guards.
+   ============================================================================= */
+group('Playbook — the guards on advice');
+
+function pbFile(mut){
+  const f = goodFile();
+  f.playbook = {
+    preparedOn:'2026-08-10', round:0,
+    basedOn:{comparatorRunOn:'2026-08-10', windowStart:'2026-10-01', discountRatePct:6.5,
+             proposalIds:['p1']},
+    baselinePV:267093.34, targetPV:194130.49,
+    points:[{rank:1, category:'escalator', ask:'Cap the increase at 2%.',
+             entitlement:'No cap anywhere in the chain.',
+             worth:72962.84, worthNote:'Comparator run 2026-08-10, p0001 vs baseline.',
+             anticipated:[{landlord:'3% is standard.', counter:'Standard where, and set when?',
+                           source:'positions'}],
+             ladder:{opening:'CPI collar.', target:'Fixed 2%.', walkAway:'Any greater-of.'},
+             tradeFor:['rent-guarantee'], priority:'must-have', status:'open'}],
+    doNotRaise:[{category:'access', because:'Already granted at no charge; raising it risks it.'}],
+    concessionOrder:[{give:'The escalator floor', toGet:'The cap'}],
+    pushback:[]
+  };
+  if(mut) mut(f);
+  return validateProject(f);
+}
+
+test('A complete playbook validates',
+  '0 errors, 0 warnings',
+  ()=>{ const v = pbFile(null); return v.errors.length+' errors, '+v.warnings.length+' warnings'; },
+  'The baseline. Everything below is a specific way of getting it wrong.');
+
+test('A figure with no stated source is an error',
+  'caught',
+  ()=>pbFile(f=>f.playbook.points[0].worthNote='').errors.some(e=>/worthNote/.test(e))
+      ?'caught':'MISSED',
+  'THE RULE THE WHOLE FILE DEPENDS ON. Every number in a playbook comes from the comparator. One '+
+  'the playbook worked out for itself will disagree with the model it came from, and two documents '+
+  'in one deal file disagreeing about money is worse than having neither.');
+
+test('An unpriceable point is allowed to say so',
+  '0 errors',
+  ()=>pbFile(f=>{ f.playbook.points[0].worth='';
+                  f.playbook.points[0].worthNote='Not priceable — depends on an antenna count the documents do not record.'; })
+      .errors.length+' errors',
+  'Most terms cannot be priced. A blank with a reason is an honest answer; a plausible number is '+
+  'not, and the schema must not push anyone toward inventing one.');
+
+test('A silence with no reason is an error',
+  'caught',
+  ()=>pbFile(f=>f.playbook.doNotRaise[0].because='').errors.some(e=>/because is required/.test(e))
+      ?'caught':'MISSED',
+  'A subject left alone with no reason recorded reads to a later reader as an oversight rather '+
+  'than a decision — and do-not-raise is a decision with real money behind it.');
+
+test('A point with no ask is an error',
+  'caught',
+  ()=>pbFile(f=>delete f.playbook.points[0].ask).errors.some(e=>/ask is required/.test(e))
+      ?'caught':'MISSED',
+  '');
+
+test('Playbook enums are checked like every other enum',
+  'status caught, outcome caught',
+  ()=>{ const a = pbFile(f=>f.playbook.points[0].status='Open').errors.some(e=>/status/.test(e));
+        const b = pbFile(f=>{ f.playbook.pushback=[{round:1, said:'x', outcome:'stonewalled'}]; })
+                  .errors.some(e=>/stonewalled/.test(e));
+        return (a?'status caught':'STATUS MISSED')+', '+(b?'outcome caught':'OUTCOME MISSED'); },
+  'Same failure class as prorationConvension. A capitalised status matches nothing downstream and '+
+  'the point silently drops out of whatever reads it.');
+
+test('A file with no playbook is still clean',
+  '0 errors, 0 warnings',
+  ()=>{ const v = validateProject(goodFile());
+        return v.errors.length+' errors, '+v.warnings.length+' warnings'; },
+  'Most deals never reach stage 3.5, and every file predating it has none. Absence stays silent.');
+
+/* =============================================================================
+   RELATED TERMS — what a change drags in with it
+
+   The audit finds problems ONE TERM AT A TIME. A draft trades ACROSS terms.
+   These cases are the user's own example: the audit flags the term length,
+   records nothing against termination, and the draft still has to put
+   termination on the table.
+   ============================================================================= */
+group('Related terms');
+
+const RL_LIB = { clauses:[
+  { id:'term.extend',      category:'term',        title:'Extend the term',        tenantBenefit:2, conflictsWith:[], requires:[] },
+  { id:'term.short',       category:'term',        title:'Short term',             tenantBenefit:1, conflictsWith:[], requires:[] },
+  { id:'termination.conv', category:'termination', title:'Convenience termination',tenantBenefit:3, conflictsWith:[], requires:[] },
+  { id:'termination.fee',  category:'termination', title:'Termination with a fee', tenantBenefit:1, conflictsWith:[], requires:[] },
+  { id:'esc.cap',          category:'escalator',   title:'Escalator cap',          tenantBenefit:3, conflictsWith:[], requires:[] },
+  { id:'rent.reduce',      category:'rent',        title:'Rent reduction',         tenantBenefit:3, conflictsWith:[], requires:[] }
+]};
+const RL_IMP = { byCategory: {
+  term: [ {category:'termination', because:'A longer term without an exit is worse than the shorter one it replaced.'},
+          {category:'escalator',   because:'Every extra year is another year of compounding.'} ],
+  rent: [ {category:'escalator',   because:'Rent and escalator are one package.'} ]
+}};
+
+test('Selecting a term clause surfaces termination, which the audit never flagged',
+  'termination, escalator',
+  ()=>relatedClauses(['term.extend'], RL_LIB, RL_IMP).map(r=>r.category).join(', '),
+  'THE CASE THAT PROMPTED THIS. Nothing in the audit findings would ever raise termination here — '+
+  'there was no finding to raise. The relationship is a property of the subjects, not of the site.');
+
+test('The reason travels with it',
+  'has a reason',
+  ()=>{ const r = relatedClauses(['term.extend'], RL_LIB, RL_IMP)[0];
+        return /worse than the shorter one/.test(r.because) ? 'has a reason' : 'NO REASON: '+r.because; },
+  'A list of clause ids tells a drafter nothing they can act on. The reason is the product — it is '+
+  'what lets someone decide in five seconds whether this trade belongs in this round.');
+
+test('A subject already in the draft is not raised again',
+  'escalator',
+  ()=>relatedClauses(['term.extend','termination.conv'], RL_LIB, RL_IMP).map(r=>r.category).join(', '),
+  'Termination is already being dealt with. The prompt is to consider the SUBJECT, so once the '+
+  'subject is in the document it has been considered — a second prompt would just be noise.');
+
+test('Options are offered best-first',
+  'termination.conv',
+  ()=>relatedClauses(['term.extend'], RL_LIB, RL_IMP)[0].options[0].id,
+  'The prompt leads with the clause most worth having, so the common case is one click. Ties break '+
+  'on id so the order does not shuffle between renders.');
+
+test('One prompt per subject, however many selections point at it',
+  1,
+  ()=>relatedClauses(['rent.reduce','term.extend'], RL_LIB, RL_IMP)
+       .filter(r=>r.category==='escalator').length,
+  'Both rent and term implicate the escalator. Two prompts for one subject reads as a bug and '+
+  'trains the reader to skim past the section.');
+
+test('Nothing selected raises nothing',
+  0,
+  ()=>relatedClauses([], RL_LIB, RL_IMP).length,
+  'The section only exists in response to a choice. An empty draft has made no trade yet.');
+
+test('A category with nothing left to offer is not raised',
+  0,
+  ()=>relatedClauses(['term.extend','termination.conv','termination.fee','esc.cap'], RL_LIB, RL_IMP).length,
+  'Saying "consider termination" and then offering no clause is worse than staying quiet — the '+
+  'reader goes looking for something that is not there.');
+
+test('The real library and impact map agree with each other',
+  'all resolve',
+  ()=>{ const cats = new Set(CLAUSE_LIBRARY.clauses.map(c=>c.category));
+        const bad = [];
+        Object.keys(CLAUSE_IMPACTS.byCategory).forEach(src=>{
+          if(!cats.has(src)) bad.push('source '+src);
+          CLAUSE_IMPACTS.byCategory[src].forEach(t=>{
+            if(!cats.has(t.category)) bad.push(src+'->'+t.category);
+            if(t.category===src) bad.push(src+' impacts itself');
+          });
+        });
+        return bad.length ? bad.join(', ') : 'all resolve'; },
+  'The shipped data, not a fixture. An impact pointing at an empty category is a prompt the '+
+  'drafter can never act on.');
+
+group('Audit findings — ordering');
+
+const AF_DEAL = {audit:{termsAnalysis:{findings:[
+  {clauseId:'esc.cap',          state:'absent', priority:'should-have', gap:3},
+  {clauseId:'termination.conv', state:'absent', priority:'must-have',   gap:3},
+  {clauseId:'rent.reduce',      state:'present-better', priority:'do-not-raise', gap:-2},
+  {clauseId:'term.extend',      state:'present-weaker', priority:'must-have',  gap:1}
+]}}};
+
+test('Must-have comes before should-have, and gap breaks the tie',
+  'termination.conv, term.extend, esc.cap',
+  ()=>auditFlagged(AF_DEAL, RL_LIB).map(f=>f.clauseId).join(', '),
+  'The audit already ranked these. Presenting them in library order throws that away and makes '+
+  'the drafter re-derive the priority the audit spent its effort establishing.');
+
+test('do-not-raise findings are not recommended',
+  'excluded',
+  ()=>auditFlagged(AF_DEAL, RL_LIB).some(f=>f.clauseId==='rent.reduce')?'INCLUDED':'excluded',
+  'Some gaps are better left closed: raising them invites the landlord to reopen something '+
+  'already settled. Excluded from the recommendation, still browsable in the full list — the '+
+  'point is that they are not pushed, not that they are hidden.');
+
+/* =============================================================================
+   DOCX — the zip, and the invariant the whole drift argument rests on
+   ============================================================================= */
+group('Docx — the container');
+
+test('CRC32 matches the standard check value',
+  'cbf43926',
+  ()=>dxCrc32(new TextEncoder().encode('123456789')).toString(16),
+  'The published check value for CRC-32/ISO-HDLC. A wrong CRC produces a zip that some readers '+
+  'accept and others reject, which is the worst kind of wrong — it works on the machine it was '+
+  'written on.');
+
+test('The archive ends with a valid end-of-central-directory record',
+  'PK, 3 entries',
+  ()=>{ const z = dxZipStore([{name:'a.xml',data:'<a/>'},{name:'b/c.xml',data:'<b/>'},
+                              {name:'d.xml',data:'<d/>'}]);
+        const dv = new DataView(z.buffer);
+        const sig = dv.getUint32(z.length-22, true);
+        const n = dv.getUint16(z.length-22+8, true);
+        return (sig===0x06054B50?'PK':'BAD SIG')+', '+n+' entries'; },
+  'The EOCD is the last thing a zip reader looks for and the first thing to go wrong when sizes '+
+  'or offsets are miscounted.');
+
+test('The same document exports byte-identical twice',
+  'identical',
+  ()=>{ const f=[{name:'word/document.xml',data:'<w:p/>'}];
+        const a=dxZipStore(f), b=dxZipStore(f);
+        if(a.length!==b.length) return 'DIFFERENT LENGTH';
+        for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return 'DIFFERS AT BYTE '+i;
+        return 'identical'; },
+  'The zip timestamp is fixed rather than "now". A document that differs from itself on every '+
+  'export cannot be diffed, and diffing two exports is how a formatting regression gets caught.');
+
+group('Docx — the house style');
+
+test('The spec drives the styles, not hard-coded values',
+  'Times New Roman 22',
+  ()=>{ const x = docxStylesXml(DOCX_FORMAT);
+        const f = /w:ascii="([^"]+)"/.exec(x), s = /<w:sz w:val="(\d+)"/.exec(x);
+        return f[1]+' '+s[1]; },
+  'Font and size come from DOCX_FORMAT. Legal will replace the spec, and the whole point of the '+
+  'data file is that replacing it changes the document without touching the writer.');
+
+test('One body size throughout — the template had two',
+  '1 distinct size',
+  ()=>{ const x = docxStylesXml(DOCX_FORMAT);
+        const sizes = [...new Set([...x.matchAll(/<w:sz w:val="(\d+)"/g)].map(m=>m[1]))];
+        return sizes.length+' distinct size'+(sizes.length===1?'':'s: '+sizes.join(',')); },
+  'The template ran body text at 11pt and numbered paragraphs at 12pt, so sections rendered a '+
+  'point larger than the paragraphs between them. A spec that contradicts itself cannot be '+
+  'checked against.');
+
+test('Numbering uses the template\'s restart form, not 3.1',
+  '%1. then %2.',
+  ()=>{ const x = docxNumberingXml(DOCX_FORMAT);
+        const t = [...x.matchAll(/<w:lvlText w:val="([^"]+)"/g)].map(m=>m[1]);
+        return t[0]+' then '+t[1]; },
+  'Sub-parts restart rather than reading 3.1, 3.2. That is the template\'s own drafting choice, '+
+  'preserved deliberately rather than "corrected" into the more common form.');
+
+group('Docx — no direct formatting');
+
+/* A four-clause document, one clause deliberately multi-paragraph. */
+const DOCX_DOC = {
+  title:'First Amendment',
+  preamble:['THIS FIRST AMENDMENT is entered into by and between A and B.'],
+  clauses:[{text:'Rent. The Annual Rent shall be $23,400.00.'},
+           {text:'Escalation. Two percent per year.\n\nFor the avoidance of doubt, nothing else applies.\n\nA third paragraph of the same section.'},
+           {text:'Termination. On 180 days notice.'}],
+  closing:['IN WITNESS WHEREOF.'],
+  signature:['LESSOR:','By: ____']
+};
+
+test('A multi-paragraph clause is ONE numbered section',
+  '3 numbered, 2 continuation',
+  ()=>{ const x = docxDocumentXml(DOCX_DOC, DOCX_FORMAT);
+        const numbered = (x.match(/<w:numPr>/g)||[]).length;
+        const cont = (x.match(/w:val="AmendmentContinuation"/g)||[]).length;
+        return numbered+' numbered, '+cont+' continuation'; },
+  'Three clauses, one of them three paragraphs long. Numbering every paragraph is how a '+
+  'three-section amendment comes out reading as five — and with auto-numbering the wrong numbers '+
+  'then propagate into every cross-reference.');
+
+test('No paragraph carries direct formatting',
+  'clean',
+  ()=>{ const x = docxDocumentXml(DOCX_DOC, DOCX_FORMAT);
+        /* Everything visual must come from the named style. numPr is the one
+           allowed exception and sectPr is page setup, not a paragraph. */
+        const bad = [];
+        [...x.matchAll(/<w:pPr>([\s\S]*?)<\/w:pPr>/g)].forEach(m=>{
+          const inner = m[1].replace(/<w:pStyle[^>]*\/>/,'')
+                            .replace(/<w:numPr>[\s\S]*?<\/w:numPr>/,'').trim();
+          if(inner) bad.push(inner.slice(0,60));
+        });
+        return bad.length ? bad.length+' with direct formatting: '+bad[0] : 'clean'; },
+  'THE INVARIANT THE DRIFT ARGUMENT RESTS ON. If our own document carries only named styles, then '+
+  'direct formatting in a returned document is by construction something a person added — which '+
+  'is what makes formatting drift detectable at all. The moment the writer starts emitting '+
+  'direct formatting, that signal is gone.');
+
+test('No RUN carries formatting beyond font and size either',
+  'clean',
+  ()=>{ /* The other half, and the half that was missing. The check above reads
+           pPr only, so the heading restating its own style's bold and caps on
+           the RUN went unnoticed until a generated document was run through the
+           conformance reader and reported itself. */
+        const x = docxDocumentXml(Object.assign({title:'FIRST AMENDMENT'}, DOCX_DOC), DOCX_FORMAT);
+        const allowed = ['rFonts','sz','szCs','lang','noProof'];
+        const bad = [];
+        [...x.matchAll(/<w:rPr>([\s\S]*?)<\/w:rPr>/g)].forEach(m=>{
+          [...m[1].matchAll(/<w:([a-zA-Z]+)[\s/>]/g)].forEach(t=>{
+            if(allowed.indexOf(t[1])<0 && bad.indexOf(t[1])<0) bad.push(t[1]);
+          });
+        });
+        return bad.length ? 'run formatting: '+bad.join(', ') : 'clean'; },
+  'Found by running our own output through our own conformance check, which reported the heading '+
+  'as carrying direct formatting. Bold and caps belong to the Heading1 style; repeating them on '+
+  'the run is belt-and-braces that costs exactly the signal the drift measurement depends on.');
+
+test('The body ends with page setup',
+  'sectPr last',
+  ()=>{ const x = docxDocumentXml(DOCX_DOC, DOCX_FORMAT);
+        return /<w:sectPr>[\s\S]*<\/w:sectPr><\/w:body>/.test(x) ? 'sectPr last' : 'MISPLACED'; },
+  'Word requires it there. Elsewhere it either repairs the file on open or drops the page setup.');
+
+test('Text is escaped, and spaces are preserved',
+  'escaped and preserved',
+  ()=>{ const x = docxDocumentXml({clauses:[{text:'Rent & "fees" <adjusted>'}]}, DOCX_FORMAT);
+        const okEsc = /Rent &amp; &quot;fees&quot; &lt;adjusted&gt;/.test(x);
+        const okSp  = /xml:space="preserve"/.test(x);
+        return (okEsc?'escaped':'NOT ESCAPED')+' and '+(okSp?'preserved':'NOT PRESERVED'); },
+  'An unescaped ampersand makes the part malformed and Word refuses the file. Without '+
+  'xml:space="preserve" Word eats leading and trailing spaces, closing up the gap after a '+
+  'numbered lead-in.');
+
+/* =============================================================================
+   FINAL REPORT — stage 8
+
+   Two gates that are easy to collapse into one, and must not be.
+   ============================================================================= */
+group('Final report — the two gates');
+
+function reportDeal(o){
+  return Object.assign({
+    glob:{projectName:'t',windowStart:'2026-01-01',windowEnd:'2036-01-01',discountRatePct:6.5},
+    current:{}, proposals:[{id:'p1',label:'Agreed'}],
+    marketBenchmark:{metro:'M',tier:'Tier 3',indicatedMonthly:900,flag:'above'},
+    deviations:[], redline:{rounds:[{round:1,date:'2026-06-01'}]}
+  }, o||{});
+}
+const dev = o => Object.assign({key:'k'+Math.random(),summary:'a change',round:1,risk:'low'}, o);
+
+test('An undecided deviation blocks the package',
+  'blocked',
+  ()=>{ const a = assessFinalReport(reportDeal({deviations:[dev({})]}));
+        return a.blocking.some(m=>/not been decided/.test(m))?'blocked':'NOT BLOCKED'; },
+  'The package may carry known risk and may not carry unread risk. An undecided change put in '+
+  'front of four reviewers as part of a finished document gets ratified by silence.');
+
+test('A rejected deviation does not block',
+  'produces',
+  ()=>{ const a = assessFinalReport(reportDeal({deviations:[dev({accepted:false})]}));
+        return a.canProduce?'produces':'BLOCKED: '+a.blocking[0]; },
+  'Rejecting is a decision. Only the unread ones are the problem, which is why `accepted` is a '+
+  'tri-state and not a flag.');
+
+test('The report is producible before anyone has signed it off',
+  'produces, not signature-ready',
+  ()=>{ const a = assessFinalReport(reportDeal({deviations:[dev({accepted:true})]}));
+        return (a.canProduce?'produces':'BLOCKED')+', '+
+               (a.signatureReady?'SIGNATURE-READY':'not signature-ready'); },
+  'THE TWO GATES ARE DIFFERENT. The report is what goes TO the reviewers, so refusing to produce '+
+  'it until they had reviewed it would be circular — but an unreviewed contract is not ready either.');
+
+test('All four functions approving makes it signature-ready',
+  'signature-ready',
+  ()=>{ const a = assessFinalReport(reportDeal({deviations:[],
+          finalReport:{reviewers:['leadership','finance','risk','legal']
+            .map(f=>({function:f,outcome:'approved'}))}}));
+        return a.signatureReady?'signature-ready':'NOT READY: '+JSON.stringify(a.signOff.missing); },
+  'Leadership, finance, risk and legal. The record exists so that no contract reaches signature '+
+  'without all four having seen the same three things.');
+
+test('Three of four is not enough',
+  'legal missing',
+  ()=>{ const a = assessFinalReport(reportDeal({finalReport:{reviewers:
+          ['leadership','finance','risk'].map(f=>({function:f,outcome:'approved'}))}}));
+        return a.signatureReady ? 'WRONGLY READY' : a.signOff.missing.join(',')+' missing'; },
+  '');
+
+test('A function that returned the package blocks readiness even with an outcome',
+  'not ready',
+  ()=>{ const a = assessFinalReport(reportDeal({finalReport:{reviewers:
+          ['leadership','finance','risk'].map(f=>({function:f,outcome:'approved'}))
+            .concat([{function:'legal',outcome:'returned'}])}}));
+        return a.signatureReady?'WRONGLY READY':'not ready'; },
+  '"Returned" is an outcome, not an approval. Counting any recorded outcome as sign-off would let '+
+  'a rejection read as a completed review.');
+
+test('A later approval supersedes an earlier return',
+  'signature-ready',
+  ()=>{ const a = assessFinalReport(reportDeal({finalReport:{reviewers:
+          ['leadership','finance','risk'].map(f=>({function:f,outcome:'approved'}))
+            .concat([{function:'legal',outcome:'returned'},
+                     {function:'legal',outcome:'approved-with-comment'}])}}));
+        return a.signatureReady?'signature-ready':'NOT READY'; },
+  'Array order is the order it happened, so the last entry for a function wins. A package that '+
+  'went back round and came back approved is approved.');
+
+group('Final report — what the reviewers are shown');
+
+test('Accepted high-risk changes are counted separately',
+  '1 of 3',
+  ()=>{ const a = assessFinalReport(reportDeal({deviations:[
+          dev({risk:'high',accepted:true}), dev({risk:'high',accepted:false}),
+          dev({risk:'low',accepted:true})]}));
+        return a.risk.acceptedHigh.length+' of '+a.risk.all.length; },
+  'This is what the package is actually asking leadership to bless. A rejected high-risk change '+
+  'cost nothing to have found; an accepted one is being carried into the contract.');
+
+test('A missing market test is a warning, not a silent omission',
+  'warned and recorded absent',
+  ()=>{ const d = reportDeal({}); delete d.marketBenchmark;
+        const b = buildFinalReport(d,{});
+        return (b.assessment.warnings.some(m=>/market test/i.test(m)) ? 'warned' : 'NOT WARNED')+
+               ' and recorded '+(b.record.includes.marketTest?'PRESENT':'absent'); },
+  'The record says what the reviewers were GIVEN, derived from the data rather than asserted by '+
+  'whoever pressed the button. What is missing has to be as visible as what is present.');
+
+test('An empty deviations list is not the same as a completed redline',
+  'not included',
+  ()=>{ const d = reportDeal({deviations:[], redline:{rounds:[]}});
+        const a = assessFinalReport(d);
+        return a.inputs.riskAssessment.present?'INCLUDED':'not included'; },
+  'A redline that ran and found nothing IS a risk assessment; a deal that never reached redlining '+
+  'is not. Both leave deviations empty, so the round record is what tells them apart.');
+
+test('A priced figure that moved after the last comparison is flagged',
+  'warned',
+  ()=>{ const a = assessFinalReport(reportDeal({
+          deviations:[dev({accepted:true,affectsPricing:true,round:2})],
+          redline:{rounds:[{round:1,date:'2026-06-01'},{round:2,date:'2026-07-01'}]},
+          stageHistory:[{stage:'comparison',date:'2026-05-01'}]}));
+        return a.warnings.some(m=>/re-run/.test(m))?'warned':'MISSED'; },
+  'The cross-stage failure. A PV in a board package that quietly describes a superseded deal is '+
+  'the one error nobody downstream can catch, because it looks exactly like a correct one.');
+
+test('Re-pricing after the change clears the flag',
+  'quiet',
+  ()=>{ const a = assessFinalReport(reportDeal({
+          deviations:[dev({accepted:true,affectsPricing:true,round:2})],
+          redline:{rounds:[{round:1,date:'2026-06-01'},{round:2,date:'2026-07-01'}]},
+          stageHistory:[{stage:'comparison',date:'2026-07-15'}]}));
+        return a.warnings.some(m=>/re-run/.test(m))?'STILL WARNING':'quiet'; },
+  'The check has to be satisfiable, or it becomes a permanent warning everyone reads past.');
+
+test('buildFinalReport refuses rather than emitting a package',
+  'ok:false, no record',
+  ()=>{ const b = buildFinalReport(reportDeal({deviations:[dev({})]}),{});
+        return 'ok:'+b.ok+', '+(b.record===undefined?'no record':'RECORD RETURNED'); },
+  'Same rule as the drafter: the gate is only real if the builder itself will not produce output '+
+  'past it. A UI that merely disables a button can be worked around.');
+
+/* =============================================================================
+   VALIDATION — the audit block
+
+   Every case here is a value that USED TO LOAD CLEAN. The audit block is the
+   largest hand-authored part of a real deal file and none of it was checked;
+   the first real audit run carried two invalid values and reported nothing.
+   ============================================================================= */
+group('Validation — the audit block');
+
+/* The audit block is optional throughout, so absence must stay silent while a
+   wrong value does not. */
+function withAudit(a){
+  return mutate => { const f=goodFile(); f.audit=JSON.parse(JSON.stringify(a)); if(mutate) mutate(f);
+                     return validateProject(f); };
+}
+const AUDIT_OK = { auditedOn:'2026-08-10', auditedBy:'agent',
+  sources:[{kind:'original-lease',ref:'x.pdf',extraction:'ocr',legibility:'degraded'}],
+  triage:{financials:'unknown',terms:'problematic',recommendation:'monitor',rationale:'because'},
+  terms:{ 'term.holdover':{value:'',status:'absent',confidence:'high',source:'audited'} },
+  termsAnalysis:{findings:[{clauseId:'title.snda',state:'absent',gap:3,priority:'should-have'}]} };
+
+test('A file with no audit block is still clean',
+  '0 errors, 0 warnings',
+  ()=>{ const v=validateProject(goodFile());
+        return v.errors.length+' errors, '+v.warnings.length+' warnings'; },
+  'Most deal files never went through stage 1, and every legacy file predates the block entirely. '+
+  'Absence has to stay silent or the check becomes noise everyone learns to ignore.');
+
+test('A complete audit block is clean',
+  '0 errors, 0 warnings',
+  ()=>{ const v=withAudit(AUDIT_OK)(null);
+        return v.errors.length+' errors, '+v.warnings.length+' warnings'; },
+  'The other half of the baseline: a correct audit must not trip any of the new checks.');
+
+test('triage.terms "favourable" is caught',
+  'error',
+  ()=>{ const v=withAudit(AUDIT_OK)(f=>f.audit.triage.terms='favourable');
+        return v.errors.some(e=>/favourable/.test(e))?'error':'MISSED'; },
+  'A REAL value from the first audit run against an actual lease. The enum is '+
+  'problematic/acceptable/unknown; "favourable" is a perfectly sensible English word and means '+
+  'nothing to the code that reads it. It loaded clean.');
+
+test('marketBenchmark.flag "above_band" is caught',
+  'error',
+  ()=>{ const f=goodFile();
+        f.marketBenchmark={metro:'M',tier:'T',flag:'above_band',asOf:'2026-08-10'};
+        return validateProject(f).errors.some(e=>/above_band/.test(e))?'error':'MISSED'; },
+  'The other one from the same run. The enum is above/in_band/below — "above_band" is the two '+
+  'spellings crossed, and it also loaded clean.');
+
+test('A capitalised status is caught',
+  'error',
+  ()=>{ const v=withAudit(AUDIT_OK)(f=>f.audit.terms['term.holdover'].status='Absent');
+        return v.errors.some(e=>/Absent/.test(e))?'error':'MISSED'; },
+  'clause-assembler tests `status===\'absent\'`. Capitalised, it matches nothing, and the warning '+
+  'that this clause may be amending something that is not there simply never fires.');
+
+test('A missing status is an error, not a blank',
+  'error',
+  ()=>{ const v=withAudit(AUDIT_OK)(f=>{ delete f.audit.terms['term.holdover'].status; });
+        return v.errors.some(e=>/status is required/.test(e))?'error':'MISSED'; },
+  'absent and ambiguous are findings in their own right. A blank reads as neither, and the term '+
+  'silently drops out of every downstream check.');
+
+test('A misspelled derivation is caught',
+  'error',
+  ()=>{ const f=goodFile();
+        f.history={rentSchedule:[{from:'1998-04-14',monthlyRent:625,derivation:'stated'},
+                                 {from:'1999-04-14',monthlyRent:643.75,derivation:'computed '}]};
+        return validateProject(f).errors.some(e=>/derivation/.test(e))?'error':'MISSED'; },
+  'The schema calls derivation the most important field in the block — a trailing space is enough '+
+  'to make a computed figure read as though it came off the page, and a variance against a '+
+  'computed figure is a question rather than a finding.');
+
+test('holdover is a legitimate rent-schedule reason',
+  '0 errors',
+  ()=>{ const f=goodFile();
+        f.history={rentSchedule:[{from:'2023-04-14',monthlyRent:1270.50,
+                                  reason:'holdover',derivation:'computed'}]};
+        return validateProject(f).errors.length+' errors'; },
+  'A lease past its last renewal still has a rent history. The schedule continues with reason '+
+  '"holdover" rather than stopping at the last contractual date.');
+
+test('A finding with no clauseId is caught',
+  'error',
+  ()=>{ const v=withAudit(AUDIT_OK)(f=>{ delete f.audit.termsAnalysis.findings[0].clauseId; });
+        return v.errors.some(e=>/clauseId is required/.test(e))?'error':'MISSED'; },
+  'A finding that names no clause cannot be matched to the library, so selectRecommended() in the '+
+  'drafter silently skips it and nothing downstream can act on it.');
+
+test('A misspelled finding state is caught',
+  'error',
+  ()=>{ const v=withAudit(AUDIT_OK)(f=>f.audit.termsAnalysis.findings[0].state='present_better');
+        return v.errors.some(e=>/present_better/.test(e))?'error':'MISSED'; },
+  'Underscore for hyphen. The drafter tests state===\'absent\'||\'present-weaker\', so this clause '+
+  'silently never gets recommended — and present-better is the state you least want to lose, '+
+  'because it marks a provision to defend.');
+
+test('finalTermEnd before currentTermEnd is caught',
+  'error',
+  ()=>{ const f=goodFile();
+        f.term={currentTermEnd:'2030-04-30',finalTermEnd:'2026-04-30'};
+        return validateProject(f).errors.some(e=>/finalTermEnd/.test(e))?'error':'MISSED'; },
+  'The final term end is the last day with every option exercised, so it cannot precede the '+
+  'current expiry. The engine bounds the baseline by it, so reversing them quietly shortens the '+
+  'do-nothing case.');
+
+test('antenna_only is a valid charge basis',
+  '0 errors',
+  ()=>{ const f=goodFile(); f.rent={chargeBasis:'antenna_only',figures:[]};
+        return validateProject(f).errors.length+' errors'; },
+  'A lease charging per antenna and silent on dishes is common. Pricing it on the '+
+  'antenna-and-dish basis adds dish adders no landlord could invoice — $800/month on a site with '+
+  'one 6ft dish.');
+
+test('Wrong-case enum is an error, not a shrug',
+  'error mentioning baselineMode',
+  ()=>{ const v=vp(f=>f.glob.baselineMode='Continue');
+        return v.errors.some(e=>/baselineMode/.test(e)) ? 'error mentioning baselineMode' : 'NOT CAUGHT'; },
+  '"Continue" for "continue" used to load silently, leave the dropdown blank and let the '+
+  'engine treat the field as unset. The numbers still computed, which is the worst outcome.');
+
+test('Impossible calendar date is caught',
+  'error mentioning windowEnd',
+  ()=>{ const v=vp(f=>f.glob.windowEnd='2027-13-45');
+        return v.errors.some(e=>/windowEnd/.test(e)) ? 'error mentioning windowEnd' : 'NOT CAUGHT'; },
+  'Date.UTC rolls overflow over, so 2027-13-45 becomes a real Date in early 2028. The regex '+
+  'alone passes it; only reformatting and comparing catches it.');
+
+test('Misspelled field is an ERROR with a suggestion',
+  'error suggesting prorationConvention',
+  ()=>{ const v=vp(f=>{ delete f.current.prorationConvention;
+                        f.current.prorationConvension='actual_365'; });
+        return v.errors.some(e=>/prorationConvension/.test(e)&&/prorationConvention/.test(e))
+             ? 'error suggesting prorationConvention' : 'NOT CAUGHT'; },
+  'The dangerous one. A misspelled key is read by nothing, so the field silently falls back '+
+  'to its default and every prorated figure changes. Close spelling means typo, so it blocks '+
+  'the load rather than warning.');
+
+test('Unrecognised field is a WARNING, so newer files still open',
+  '0 errors, warning names the field',
+  ()=>{ const v=vp(f=>f.proposals[0].someFutureFieldThisBuildDoesNotKnow='x');
+        return v.errors.length+' errors, '+
+               (v.warnings.some(w=>/someFutureField/.test(w))?'warning names the field':'NOT WARNED'); },
+  'A field this build does not know is probably from a newer version, not a typo. Blocking '+
+  'the load would make the format a one-way door.');
+
+test('Future schema major version is refused',
+  'error, load blocked',
+  ()=>{ const v=vp(f=>f.schemaVersion='2.0');
+        return v.errors.length ? 'error, load blocked' : 'NOT CAUGHT'; },
+  'A v2 file may reuse a field name with different meaning. Refusing beats misreading it '+
+  'and producing numbers that look fine.');
+
+test('Missing schemaVersion loads with a note',
+  '0 errors, 1+ warning',
+  ()=>{ const v=vp(f=>delete f.schemaVersion);
+        return v.errors.length+' errors, '+(v.warnings.length?'1+ warning':'no warning'); },
+  'Every project saved before v1 lacks it. Those must still open -- but the payment-day '+
+  'default changed, so the file cannot open silently either.');
+
+test('Decimal-slip in the discount rate warns without blocking',
+  '0 errors, warning names discountRatePct',
+  ()=>{ const v=vp(f=>f.glob.discountRatePct=650);
+        return v.errors.length+' errors, '+
+               (v.warnings.some(w=>/discountRatePct/.test(w))?'warning names discountRatePct':'NOT WARNED'); },
+  '650 for 6.5 parses perfectly and discounts everything to near zero. It is legal input, '+
+  'so it warns rather than blocks -- but it cannot pass in silence.');
+
+test('Zero payment cadence is an error',
+  'error mentioning cadenceMonths',
+  ()=>{ const v=vp(f=>f.current.cadenceMonths=0);
+        return v.errors.some(e=>/cadenceMonths/.test(e)) ? 'error mentioning cadenceMonths' : 'NOT CAUGHT'; },
+  'Cadence 0 is meaningful on an escalator -- a one-time step -- and meaningless on a payment '+
+  'cycle. The same number, valid in one place and not the other.');
+
+test('Negative base rent is an error',
+  'error mentioning baseRent',
+  ()=>{ const v=vp(f=>f.current.baseRent=-2100);
+        return v.errors.some(e=>/baseRent/.test(e)) ? 'error mentioning baseRent' : 'NOT CAUGHT'; },
+  'Negative rent is not a lease. An inducement belongs in one-time payments with direction '+
+  '"to_tenant", where the sign is handled deliberately.');
+
+test('Every problem is reported at once, not one per reload',
+  '5+ errors from one pass',
+  ()=>{ const v=vp(f=>{ f.glob.baselineMode='Continue'; f.glob.windowEnd='2027-13-45';
+                        f.current.rentBasis='Monthly'; f.current.paymentTiming='Advance';
+                        f.current.baseRent=-1; f.proposals[0].rentMode='percent_of_current'; });
+        return v.errors.length+'+ errors from one pass'; },
+  'A hand-edited file usually has several problems. Fixing them one reload at a time is '+
+  'the difference between a usable error path and a hostile one.',
+  (a)=>parseInt(a,10)>=5);
+
+/* =============================================================================
+   CLAUSE ASSEMBLY — words, and the gate
+   ============================================================================= */
+group('Amendment drafting — figures written as words');
+
+test('Whole dollars',
+  'two thousand two hundred fifty dollars',
+  ()=>moneyToWords(2250),
+  'Legal drafting states a figure twice and THE WORDS CONTROL if the two disagree. Generating '+
+  'them wrongly is worse than leaving them blank: the document then says something nobody intended.');
+
+test('Dollars and cents use the n/100 form',
+  'one thousand eight hundred fifty and 50/100 dollars',
+  ()=>moneyToWords(1850.50),
+  'The convention in every lease this library was drawn from. "Fifty cents" is not it.');
+
+test('Whole percentages',
+  'ten percent',
+  ()=>percentToWords(10),
+  '');
+
+test('A fractional percentage returns nothing rather than guessing',
+  '(empty)',
+  ()=>percentToWords(2.5)===''?'(empty)':percentToWords(2.5),
+  '"Two and one-half percent" is not how it would be drafted, and "two point five percent" is '+
+  'not either. Returning empty forces the caller to surface it instead of emitting something odd.');
+
+test('Dates are spelled out in UTC',
+  'May 1, 2026',
+  ()=>dateToWords('2026-05-01'),
+  'Uses the engine parser, so a date cannot shift by a day against the figures the comparator '+
+  'produced from the same string.');
+
+test('The amendment names itself by chain position',
+  'Third',
+  ()=>ordinalName(3),
+  'Derived from how many amendments exist, not from what the last one called itself. Stated '+
+  'titles and chronological order disagree often enough that typing it is how the wrong one gets used.');
+
+group('Amendment drafting — the gate');
+
+/* A deliberately small library, so each case states its own premises rather
+   than depending on the real one, which will keep changing. */
+const TL = { clauses:[
+  { id:'a', title:'A', category:'term', tenantBenefit:3, conflictsWith:['b'], requires:[], targetSection:'' },
+  { id:'b', title:'B', category:'term', tenantBenefit:2, conflictsWith:['a'], requires:[], targetSection:'' },
+  { id:'c', title:'C', category:'rent', tenantBenefit:1, conflictsWith:[],    requires:['definedTerm:RentName'], targetSection:'' },
+  { id:'d', title:'D', category:'rent', tenantBenefit:1, conflictsWith:[],    requires:['clause:c'], targetSection:'' },
+  { id:'e', title:'E', category:'term', tenantBenefit:1, conflictsWith:[],    requires:['sectionMap:term'], targetSection:'{{sectionMap.term}}' }
+]};
+const TT = { a:'Clause A refers to {{RentName}}.', b:'Clause B.', c:'Clause C.',
+             d:'Clause D.', e:'Section {{sectionMap.term}} is amended.' };
+const TD = () => JSON.parse(JSON.stringify({
+  glob:{projectName:'t'}, current:{}, proposals:[],
+  /* A normal lease: the term exists and the base document defines it. */
+  definedTerms:{ RentName:{value:'Lease Fee', definedIn:'original', section:'3(a)'} },
+  sectionMap:{ term:'3' },
+  documentChain:[{id:'original',chronologicalOrdinal:0}]
+}));
+
+test('Mutually exclusive clauses block the document',
+  'blocked',
+  ()=>assess(TD(), ['a','b'], TL, TT).blocking.some(m=>/mutually exclusive/.test(m))?'blocked':'NOT BLOCKED',
+  'Both amend the same thing. A document carrying both contradicts itself, and which one governs '+
+  'becomes an argument.');
+
+test('An unresolved placeholder blocks the document',
+  'blocked',
+  ()=>{ const d=TD(); delete d.definedTerms.RentName;
+        return assess(d, ['a'], TL, TT).blocking.some(m=>/RentName/.test(m))?'blocked':'NOT BLOCKED'; },
+  'THE CENTRAL RULE. "Section XX" reached executed amendments in the process this replaces, '+
+  'because filling it in was a checklist item. A checklist catches it most of the time; a hard '+
+  'failure catches it every time.');
+
+test('A defined term the lease never defines blocks it',
+  'blocked',
+  ()=>{ const d=TD(); d.definedTerms={};
+        return assess(d, ['c'], TL, TT).blocking.some(m=>/does not define/.test(m))?'blocked':'NOT BLOCKED'; },
+  'The clause would refer to a term that exists nowhere in the chain. Capitalized-terms '+
+  'boilerplate does not rescue it — it points at the Agreement, and there is nothing there.');
+
+test('A term with a value but no source blocks it',
+  'blocked',
+  ()=>{ const d=TD(); d.definedTerms.RentName={value:'Rent'};   // value, but definedIn absent
+        return assess(d, ['c'], TL, TT).blocking.some(m=>/no document in the chain/.test(m))?'blocked':'NOT BLOCKED'; },
+  'A value with no source is a term the amendment would INTRODUCE while reading as though it were '+
+  'already established. Legitimate when deliberate and marked redefinedHere; a defect when not.');
+
+test('A term redefined over an existing definition warns but does not block',
+  '0 blocking, warned',
+  ()=>{ const d=TD(); d.definedTerms.RentName={value:'Rent',definedIn:'original',redefinedHere:true};
+        const a=assess(d, ['c'], TL, TT);
+        return a.blocking.length+' blocking, '+(a.warnings.some(m=>/redefined/.test(m))?'warned':'NOT WARNED'); },
+  'Redefining a term the lease already defines is the trap most likely to be argued later — but it '+
+  'is sometimes the right call, so it is a warning to confirm rather than a refusal.');
+
+test('A missing cross-referenced clause blocks it',
+  'blocked',
+  ()=>assess(TD(), ['d'], TL, TT).blocking.some(m=>/not selected/.test(m))?'blocked':'NOT BLOCKED',
+  'D cross-references C. Shipping D alone leaves a reference pointing at nothing — the same '+
+  'defect as a termination clause citing a Default and Cure section that was never included.');
+
+test('A missing section number blocks it',
+  'blocked',
+  ()=>{ const d=TD(); d.sectionMap={};
+        return assess(d, ['e'], TL, TT).blocking.some(m=>/sectionMap.term/.test(m))?'blocked':'NOT BLOCKED'; },
+  'This is exactly the Section XX failure, caught before the document exists rather than after '+
+  'it is signed.');
+
+test('An unresolved placeholder says what form the value should take',
+  'quotes the expected form',
+  ()=>{ if(typeof CLAUSE_PLACEHOLDERS === 'undefined') return 'BUNDLE NOT LOADED';
+        /* A tiny library whose one clause needs a value nothing supplies. */
+        const L = {clauses:[{id:'x', title:'X', category:'insurance', tenantBenefit:0,
+                             conflictsWith:[], requires:[], targetSection:''}]};
+        const X = {x:'…limits of not less than {{Insurance_CGL_Limit}}…'};
+        const m = assess(TD(), ['x'], L, X).blocking.find(b=>/Insurance_CGL_Limit/.test(b));
+        if(!m) return 'NOT BLOCKED';
+        return /Three Million Dollars/.test(m) && /amendmentTerms/.test(m)
+             ? 'quotes the expected form' : 'BARE MESSAGE: '+m.slice(0,110); },
+  'A placeholder value is dropped VERBATIM into legal prose, and the field name says nothing about '+
+  'the form. Write 3000000 and the clause reads "limits of not less than 3000000" — it loads, it '+
+  'validates, and it reaches an executed document. Naming the expected form turns a blocking error '+
+  'into an actionable one.');
+
+test('Every placeholder in the shipped library has sample language',
+  'all documented',
+  ()=>{ if(typeof CLAUSE_PLACEHOLDERS === 'undefined' || typeof CLAUSE_TEXTS === 'undefined')
+          return 'BUNDLE NOT LOADED';
+        const documented = new Set(CLAUSE_PLACEHOLDERS.placeholders.map(p=>p.name));
+        const missing = new Set();
+        Object.values(CLAUSE_TEXTS).forEach(t=>{
+          (t.match(/\{\{([A-Za-z0-9_\.]+)\}\}/g)||[]).forEach(m=>{
+            const n = m.slice(2,-2);
+            if(!n.startsWith('sectionMap.') && !documented.has(n)) missing.add(n);
+          });
+        });
+        return missing.size ? [...missing].join(', ') : 'all documented'; },
+  'The SHIPPED library, not a fixture. Whoever fills a deal file should never have to guess whether '+
+  'a value wants digits, words, or both.');
+
+test('A clean selection produces a document',
+  'ok, 1 part, Lease Fee substituted',
+  ()=>{ const r = assemble(TD(), ['a'], TL, TT);
+        return r.ok ? 'ok, '+r.parts.length+' part, '+
+               (/Lease Fee/.test(r.parts[0].text)?'Lease Fee substituted':'NOT SUBSTITUTED')
+             : 'BLOCKED: '+r.assessment.blocking[0]; },
+  'And the substitution is the lease\'s own term — "Lease Fee", not "Rent". Introducing a new '+
+  'name for rent creates two payment obligations on one document.');
+
+test('assemble() refuses rather than emitting a defective document',
+  'ok:false, no parts',
+  ()=>{ const r = assemble(TD(), ['a','b'], TL, TT);
+        return 'ok:'+r.ok+', '+(r.parts===undefined?'no parts':'PARTS RETURNED'); },
+  'The gate is only real if the assembler itself will not produce output past it. A UI that '+
+  'merely disables a button can be worked around.');
+
+/* =============================================================================
+   REDLINE COMPARE — stage 7
+
+   The inverse of the drafter's gate. The drafter refuses to emit a defective
+   document; this one never refuses anything — it refuses to let a change pass
+   UNSEEN. Every case below is an edit that reads as housekeeping and is not.
+   ============================================================================= */
+group('Redline — tokenising and diff');
+
+test('A dollar figure is one token, not four',
+  '$2,250.00 | per | month',
+  ()=>rlTokenize('$2,250.00 per month').join(' | '),
+  'Split on the comma and the diff reports that "250" became "100" inside a number that moved by '+
+  '$150. True, and useless. Same reason "3.5%" stays whole.');
+
+test('A one-word substitution is del + ins, not a rewrite',
+  'eq:the del:Premises ins:Property eq:shall',
+  ()=>rlDiff(rlTokenize('the Premises shall'), rlTokenize('the Property shall'))
+        .map(o=>o.op+':'+o.tokens.join(' ')).join(' '),
+  'Common prefix and suffix are trimmed before the table is built, which is what keeps a long '+
+  'clause with one changed word cheap to diff and readable when it comes back.');
+
+test('Identical text produces no change',
+  'eq only',
+  ()=>{ const ops = rlDiff(rlTokenize('Tenant shall pay Rent.'), rlTokenize('Tenant shall pay Rent.'));
+        return ops.every(o=>o.op==='eq') ? 'eq only' : 'SPURIOUS CHANGE'; },
+  'A comparison that reports noise on an unchanged paragraph trains the reviewer to skim, which '+
+  'defeats the only thing this stage does.');
+
+group('Redline — words versus figures');
+
+test('"one hundred eighty" parses to 180',
+  180,
+  ()=>rlWordsToNumber('one hundred eighty'),
+  'The inverse of the drafter\'s numberToWords. Needed because a legal figure is written twice '+
+  'and both renderings have to be compared.');
+
+test('A figure edited without its words is caught',
+  'words 180, figure 90',
+  ()=>{ const m = rlWordFigureMismatches('within one hundred eighty (90) days of notice')[0];
+        return m ? 'words '+m.words+', figure '+m.figure : 'NOT CAUGHT'; },
+  'THE MOST VALUABLE CHECK HERE, and it needs no diff at all. Where words and figures disagree '+
+  'THE WORDS CONTROL — so this clause means 180 days however carefully the parenthetical was '+
+  'negotiated. A reader checking numbers reads the parenthetical, so it survives review.');
+
+test('Matching words and figures are not flagged',
+  0,
+  ()=>rlWordFigureMismatches('within one hundred eighty (180) days').length,
+  'The check is only useful if it is quiet when the drafting is right.');
+
+group('Redline — what a change does');
+
+/* One paragraph in, one out. Each case changes exactly one thing, so the
+   finding it produces is the finding under test. */
+function rl(ours, theirs, deal){
+  return analyzeRedline(ours, theirs, deal || {definedTerms:{}}, {round:1});
+}
+const sigs = a => a.findings.map(f=>f.signal).join(',') || '(none)';
+
+test('Deleting "not to be unreasonably withheld" is high risk',
+  'consent-standard-removed / high',
+  ()=>{ const a = rl(
+          'Tenant may sublease the Premises with the consent of Landlord, such consent not to be unreasonably withheld.',
+          'Tenant may sublease the Premises with the consent of Landlord.');
+        const f = a.findings.find(x=>x.signal==='consent-standard-removed');
+        return f ? f.signal+' / '+f.risk : 'MISSED — got '+sigs(a); },
+  'Six words that convert a consent which can be challenged into one that cannot. It removes the '+
+  'entire remedy and it reads as tidying up a sentence.');
+
+test('A changed rent figure flags the comparator as stale',
+  'money-changed / affectsPricing true',
+  ()=>{ const a = rl('Rent shall be $2,100.00 per month.', 'Rent shall be $2,250.00 per month.');
+        const f = a.findings.find(x=>x.signal==='money-changed');
+        return f ? f.signal+' / affectsPricing '+f.affectsPricing : 'MISSED — got '+sigs(a); },
+  'The cross-stage one. The comparator priced $2,100; the document now says $2,250, so the '+
+  'financial case on file describes a deal that is no longer on the table.');
+
+test('A number can move inside otherwise unchanged wording',
+  1,
+  ()=>rl('subject to an escalation of 3% per annum.', 'subject to an escalation of 3.5% per annum.')
+       .findings.filter(f=>f.signal==='percent-changed').length,
+  'No word changed, so a worded-signal-only detector reports nothing here. Half a point of '+
+  'escalator compounds for the life of the lease.');
+
+test('Swapping a defined term is caught though both words are ordinary English',
+  'defined-term-dropped',
+  ()=>{ const deal = {definedTerms:{AreaName:{value:'Premises'}}};
+        const a = rl('Tenant shall maintain the Premises in good repair.',
+                     'Tenant shall maintain the Property in good repair.', deal);
+        const f = a.findings.find(x=>x.signal==='defined-term-dropped');
+        return f ? f.signal : 'MISSED — got '+sigs(a); },
+  'The audit exists to establish what this lease calls things. Premises and Property describe '+
+  'different areas; the substitution reads as a synonym and silently moves the boundary of an '+
+  'obligation.');
+
+test('A whole paragraph dropping out is reported',
+  'text-removed / high',
+  ()=>{ const a = rl('One. Tenant shall have access to the Premises at all times.\n\nTwo. Landlord shall not interfere with Tenant operations.',
+                     'One. Tenant shall have access to the Premises at all times.');
+        const f = a.findings.find(x=>x.signal==='text-removed');
+        return f ? f.signal+' / '+f.risk : 'MISSED — got '+sigs(a); },
+  'The deviation least likely to be caught on a read-through, because nothing on the page looks '+
+  'wrong — the reader sees clean text and no gap where the clause used to be.');
+
+test('New text they added is flagged as unvetted',
+  'text-added',
+  ()=>{ const a = rl('One. Tenant shall pay Rent when due.',
+                     'One. Tenant shall pay Rent when due.\n\nTwo. Time is of the essence in this Agreement.');
+        return a.findings.some(x=>x.signal==='text-added') ? 'text-added' : 'MISSED — got '+sigs(a); },
+  'Not inherently bad — the landlord is entitled to ask. But it did not come from the clause '+
+  'library, so nothing has vetted it.');
+
+test('A landlord termination right lands as high risk',
+  'high',
+  ()=>{ const a = rl('This Agreement shall continue for the Extension Term.',
+                     'This Agreement shall continue for the Extension Term, provided that Landlord may terminate this Agreement upon notice.');
+        const f = a.findings.find(x=>x.signal==='termination-added');
+        return f ? f.risk : 'MISSED — got '+sigs(a); },
+  'On a cell site this is close to a total loss: the equipment is fixed, the search ring is not, '+
+  'and relocation runs to six figures.');
+
+test('An unchanged document produces nothing to review',
+  '0 findings',
+  ()=>{ const t = 'Tenant shall pay Rent of $2,100.00 per month.\n\nLandlord shall not interfere with Tenant operations.';
+        return rl(t,t).findings.length + ' findings'; },
+  'The quiet case has to be genuinely quiet, or the noisy one carries no information.');
+
+test('The quote shown is the edit that matched, not every edit in the paragraph',
+  'no unrelated edits in the quote',
+  ()=>{ /* Four separate edits in one rent clause — taken from a real redline run. */
+        const a = rl('the sum of Ten Thousand Two Hundred Dollars ($10,200.00), payable in equal monthly '+
+                     'installments of Eight Hundred Fifty Dollars ($850.00). Rent shall increase by 2% of the rent for the previous year.',
+                     'the sum of Eleven Thousand Four Hundred Dollars ($11,400.00), payable in equal monthly '+
+                     'installments of Nine Hundred Fifty Dollars ($950.00). Rent shall increase by the greater of 3% or CPI of the rent for the previous year.');
+        const f = a.findings.find(x=>x.signal==='floor-added');
+        if(!f) return 'MISSED floor-added';
+        return /greater of/.test(f.detail) && !/950|11,400/.test(f.detail)
+             ? 'no unrelated edits in the quote' : 'JUMBLED: '+f.detail; },
+  'Detection reads all the edits joined, so a phrase split across two of them is still found. The '+
+  'QUOTE must not: a real run produced the evidence “$11,400.00 Nine $950.00 the greater of 3% or '+
+  'CPI”, which is four unrelated edits in a row. A reviewer shown that cannot tell a true finding '+
+  'from a false one, and starts discounting all of them.');
+
+test('Shortening an interference cure is not reported as an access change',
+  'interference only',
+  ()=>{ /* From a real redline run. "twenty-four (24) hours" is the standard cure
+           period on interference and utility notice, not just on access. */
+        const a = rl('LESSOR shall cause any such interference to cease within twenty-four (24) hours of notice.',
+                     'LESSOR shall cause any such interference to cease within one hundred eighty (30) days of notice.');
+        const sigs = a.findings.map(f=>f.signal);
+        return sigs.indexOf('access-narrowed')<0 ? 'interference only'
+             : 'MISLABELLED as access: '+sigs.join(','); },
+  'A true finding under the wrong label sends the reviewer to the wrong clause, which is its own '+
+  'kind of wrong — and it costs more trust than a miss, because the reviewer checks the access '+
+  'clause, finds it untouched, and concludes the tool is noisy.');
+
+test('A real access change is still caught',
+  'access-narrowed',
+  ()=>{ const a = rl('LESSEE shall have access to the Premises twenty-four hours per day at no charge.',
+                     'LESSEE shall have access to the Premises during normal business hours.');
+        return a.findings.some(f=>f.signal==='access-narrowed')?'access-narrowed':'MISSED — over-tightened'; },
+  'The other half of the fix. Narrowing the pattern is only right if it still fires on the thing it '+
+  'was written for.');
+
+group('Redline — the record survives re-analysis');
+
+/* The merge is where "reviewed as it arrives" is actually enforced. */
+const RENT_ROUND = ()=>rl('Rent shall be $2,100.00 per month.', 'Rent shall be $2,250.00 per month.');
+
+test('Re-running the same round does not duplicate the list',
+  'same count twice',
+  ()=>{ const a = RENT_ROUND();
+        const first  = mergeDeviations([], toDeviations(a,{}));
+        const second = mergeDeviations(first.deviations, toDeviations(a,{}));
+        return first.deviations.length === second.deviations.length
+             ? 'same count twice' : first.deviations.length+' → '+second.deviations.length; },
+  'A reviewer who re-runs an analysis and finds their worked-through list doubled stops using the '+
+  'tool. Keys come from what the finding IS, not where it sits, so a paragraph that moves is '+
+  'still the same deviation.');
+
+test('A human disposition survives a re-run',
+  'accepted:true kept',
+  ()=>{ const a = RENT_ROUND();
+        const first = mergeDeviations([], toDeviations(a,{}));
+        first.deviations.forEach(d=>{ d.accepted=true; d.acceptedBy='reviewer'; });
+        const again = mergeDeviations(first.deviations, toDeviations(a,{}));
+        return again.deviations.every(d=>d.accepted===true) ? 'accepted:true kept' : 'DISPOSITION LOST'; },
+  'Everything the analysis knows is refreshed; everything a person decided is not. Losing a '+
+  'disposition on a re-run is worse than never storing one, because the reviewer believes it is there.');
+
+test('A reviewer changing their mind overrides the stored decision',
+  'accepted:false',
+  ()=>{ const a = RENT_ROUND();
+        const first = mergeDeviations([], toDeviations(a,{}));
+        first.deviations.forEach(d=>{ d.accepted=true; d.acceptedBy='reviewer'; });
+        /* Second pass carries an EXPLICIT disposition, the way the UI sends one. */
+        const revised = toDeviations(a,{}).map(d=>Object.assign(d,{accepted:false, acceptedBy:'reviewer'}));
+        const again = mergeDeviations(first.deviations, revised);
+        return 'accepted:'+again.deviations[0].accepted; },
+  'The mirror of the case above, and the first version got it backwards — it protected the stored '+
+  'value against everything, so a decision could be recorded once and never revised, and the UI '+
+  'silently discarded the change. An analysis never sets a disposition; only the reviewer does, so '+
+  'an explicit incoming value is always them.');
+
+test('A later round appends to the record rather than restating it',
+  'grew',
+  ()=>{ const r1 = RENT_ROUND();
+        const r2 = analyzeRedline('Rent shall be $2,250.00 per month.',
+                                  'Rent shall be $2,400.00 per month.', {}, {round:2});
+        const a = mergeDeviations([], toDeviations(r1,{}));
+        const b = mergeDeviations(a.deviations, toDeviations(r2,{}));
+        return b.deviations.length > a.deviations.length ? 'grew'
+             : 'DID NOT GROW ('+a.deviations.length+' → '+b.deviations.length+')'; },
+  'Round 3 is compared against round 2, not against the original draft. The accumulated record is '+
+  'what feeds the final report, so each round has to add to it.');
+
+test('Only undecided deviations count as open',
+  1,
+  ()=>openDeviations({deviations:[
+        {key:'a', summary:'x', accepted:true},
+        {key:'b', summary:'y', accepted:false},
+        {key:'c', summary:'z'}
+      ]}).length,
+  'Stage 8 is allowed to carry known risk and is not allowed to carry unread risk. A REJECTED '+
+  'deviation is closed — someone looked at it and said no.');
+
+/* =============================================================================
+   RUN
+   ============================================================================= */
+(function run(){
+  const tb = document.querySelector('#results tbody');
+  let pass=0, fail=0;
+  const failed = [];
+  const groupAt = {};
+  GROUPS.forEach(g=>{ (groupAt[g.at]=groupAt[g.at]||[]).push(g.name); });
+
+  CASES.forEach((c,i)=>{
+    (groupAt[i]||[]).forEach(name=>{
+      const gr = tb.insertRow(); gr.className='grp';
+      const gc = gr.insertCell(); gc.colSpan=6; gc.textContent=name;
+    });
+    let actual, ok;
+    try {
+      actual = c.actualFn();
+      ok = c.cmp ? c.cmp(actual, c.expected) : (String(actual) === String(c.expected));
+    } catch (e) {
+      actual = 'THREW: ' + e.message;
+      ok = false;
+    }
+    if(ok) pass++; else { fail++; failed.push('#'+(i+1)+' '+c.name+'  —  expected ['+c.expected+'] got ['+actual+']'); }
+    const tr = tb.insertRow(); if(!ok) tr.className='failrow';
+    tr.insertCell().textContent = i+1;
+    tr.insertCell().textContent = c.name;
+    const ec = tr.insertCell(); ec.className='n'; ec.textContent = c.expected;
+    const ac = tr.insertCell(); ac.className='n'; ac.textContent = actual;
+    const rc = tr.insertCell(); rc.className = ok?'pass':'fail'; rc.textContent = ok?'PASS':'FAIL';
+    const wc = tr.insertCell(); wc.className='why'; wc.textContent = c.why;
+  });
+
+  /* The summary NAMES the failures rather than counting them. The table below
+     has the detail, but it is long enough that finding four red rows in it is
+     its own small chore — and the first thing anyone does with a failing run is
+     go looking for which ones. */
+  const s = document.getElementById('summary');
+  s.className = fail ? 'anyfail' : 'allpass';
+  s.textContent = fail
+    ? fail+' FAILED, '+pass+' passed  --  of '+CASES.length
+    : 'ALL '+pass+' PASSED';
+  if(fail){
+    const ul = document.createElement('div');
+    ul.style.cssText = 'font:12px/1.6 ui-monospace,Consolas,monospace;margin-top:10px;font-weight:400';
+    ul.textContent = failed.join('\n');
+    ul.style.whiteSpace = 'pre-wrap';
+    s.appendChild(ul);
+  }
+  document.title = (fail? fail+' FAILED' : 'all '+pass+' passed') + ' - lease engine tests';
+})();
+</script>
+</body>
+</html>

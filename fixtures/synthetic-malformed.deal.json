@@ -1,0 +1,65 @@
+{
+  "_comment": "SYNTHETIC AND DELIBERATELY BROKEN. Load this to see the error path. It should be REFUSED with every problem listed at once, and nothing in the tool should change. Each bad value below is a real failure mode that used to load silently and still compute a confident, wrong number.",
+
+  "schemaVersion": "1.0",
+  "confidential": false,
+
+  "glob": {
+    "projectName": "Malformed sample",
+    "windowStart": "2026-01-01",
+    "windowEnd": "2027-13-45",
+    "pvReferenceDate": "2026-01-01",
+    "discountRatePct": 650,
+    "assumedCpiPct": 3,
+    "baselineMode": "Continue"
+  },
+
+  "current": {
+    "termEnd": "2030-04-30",
+    "baseRent": -2100,
+    "rentBasis": "Monthly",
+    "cadenceMonths": 0,
+    "firstPaymentDate": "2026-01-01",
+    "paymentTiming": "Advance",
+    "prorationBasis": "prorated",
+    "prorationConvension": "actual_365",
+    "paymentDayRule": "anchored",
+    "escalators": [
+      {
+        "appliesFrom": "",
+        "appliesTo": "",
+        "type": "fixed%",
+        "ratePct": 300,
+        "cadenceMonths": -12,
+        "firstAdjustment": "2027-02-30",
+        "compounding": "on_prior",
+        "floorPctIn": "",
+        "capPctIn": ""
+      }
+    ],
+    "oneTimePayments": []
+  },
+
+  "proposals": [
+    {
+      "id": "p0001",
+      "label": "Broken proposal",
+      "effectiveDate": "2026-05-01",
+      "rentMode": "percent_of_current",
+      "rentValue": "eighteen hundred",
+      "rentBasis": "monthly",
+      "termEnd": "2041-04-30",
+      "cadenceMonths": 1,
+      "firstPaymentDate": "2026-05-01",
+      "paymentTiming": "advance",
+      "prorationBasis": "prorated",
+      "prorationConvention": "actual_month",
+      "paymentDayRule": "anchored",
+      "someFutureFieldThisBuildDoesNotKnow": "should warn, not block",
+      "escalators": [],
+      "oneTimePayments": [
+        { "label": "Inducement", "date": "2026-05-01", "amount": -5000, "direction": "to_tenant" }
+      ]
+    }
+  ]
+}

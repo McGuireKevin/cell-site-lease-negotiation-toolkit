@@ -1,0 +1,150 @@
+SYNTHETIC TEST DOCUMENT — NOT A REAL LEASE. Invented parties, invented site,
+invented figures. Safe to commit. See README.md in this folder.
+
+================================================================================
+
+                    COMMUNICATIONS SITE LEASE AGREEMENT
+
+THIS COMMUNICATIONS SITE LEASE AGREEMENT (this "Agreement") is made as of
+May 1, 2006 (the "Commencement Date"), by and between PLACEHOLDER HOLDINGS LLC,
+a limited liability company ("Lessor"), and SAMPLE WIRELESS INC., a corporation
+("Lessee").
+
+                                  RECITALS
+
+WHEREAS, Lessor is the owner of certain real property located at 1 Example Road,
+Springfield, ZZ 00000 (the "Land"); and
+
+WHEREAS, Lessee desires to lease a portion of the Land for the purpose of
+constructing and operating a communications facility;
+
+NOW THEREFORE, the parties agree as follows:
+
+1.  PREMISES.
+
+    Lessor leases to Lessee approximately two thousand five hundred (2,500)
+    square feet of ground space, together with the tower and improvements
+    constructed thereon, as depicted on Exhibit A attached hereto (the
+    "Premises"). Lessee shall also have a non-exclusive easement for ingress
+    and egress over the Land.
+
+2.  TERM.
+
+    (a) The initial term of this Agreement shall be five (5) years commencing on
+        the Commencement Date and expiring on April 30, 2011 (the "Initial
+        Term").
+
+    (b) Lessee shall have the option to extend this Agreement for four (4)
+        additional terms of five (5) years each (each, an "Extension Term"),
+        upon the same terms and conditions, provided that Lessee gives Lessor
+        written notice of its election to extend not less than one hundred and
+        eighty (180) days prior to the expiration of the then-current term.
+
+    (c) The Initial Term together with any exercised Extension Terms are
+        referred to as the "Term".
+
+3.  LEASE FEE.
+
+    (a) Lessee shall pay to Lessor a lease fee of ONE THOUSAND TWO HUNDRED AND
+        NO/100 DOLLARS ($1,200.00) per month (the "Lease Fee"), payable in
+        advance on the first day of each calendar month.
+
+    (b) Commencing on the first anniversary of the Commencement Date and on each
+        anniversary thereafter, the Lease Fee shall increase by three percent
+        (3%) over the Lease Fee payable during the immediately preceding twelve
+        (12) month period.
+
+    (c) The Lease Fee is inclusive of all charges for the Premises and Lessee
+        shall not be separately charged for the area occupied.
+
+4.  USE.
+
+    Lessee may use the Premises for the transmission and reception of wireless
+    communications signals and for the construction, maintenance and operation
+    of a communications facility. Any material alteration to the configuration
+    of Lessee's equipment shall require the prior written consent of Lessor,
+    such consent not to be unreasonably withheld.
+
+5.  ACCESS.
+
+    Lessee shall have access to the Premises during normal business hours,
+    Monday through Friday, upon twenty-four (24) hours prior notice to Lessor.
+    In the event of an emergency affecting the operation of the communications
+    facility, Lessee shall have access at any time, provided Lessee notifies
+    Lessor as soon as practicable thereafter.
+
+6.  UTILITIES.
+
+    Lessee shall be responsible for all utilities consumed at the Premises and
+    shall, where practicable, install a separate meter at its own cost.
+
+7.  ASSIGNMENT AND SUBLETTING.
+
+    Lessee shall not assign this Agreement or sublet the Premises without the
+    prior written consent of Lessor. Notwithstanding the foregoing, Lessee may
+    assign this Agreement to any parent, subsidiary or affiliate of Lessee, or
+    to any entity acquiring substantially all of Lessee's assets in the market
+    in which the Premises is located, without the consent of Lessor.
+
+8.  CO-LOCATION.
+
+    Lessee may permit one or more additional communications providers to locate
+    equipment on the tower, and no additional fee shall be payable to Lessor in
+    respect of any such co-location.
+
+9.  TAXES.
+
+    Lessor shall pay all real property taxes assessed against the Land. Lessee
+    shall pay any personal property taxes assessed against its equipment.
+
+10. INSURANCE.
+
+    Lessee shall maintain commercial general liability insurance with limits of
+    not less than One Million Dollars ($1,000,000) per occurrence and shall name
+    Lessor as an additional insured.
+
+11. DEFAULT.
+
+    In the event Lessee fails to pay the Lease Fee when due and such failure
+    continues for thirty (30) days after written notice from Lessor, or fails to
+    perform any other obligation under this Agreement and such failure continues
+    for thirty (30) days after written notice, Lessor may terminate this
+    Agreement.
+
+12. TERMINATION.
+
+    Lessee may terminate this Agreement upon written notice to Lessor if Lessee
+    is unable to obtain or maintain any governmental approval necessary for the
+    operation of the communications facility. Upon any such termination Lessee
+    shall pay to Lessor a termination fee equal to six (6) months of the
+    then-current Lease Fee.
+
+13. SURRENDER.
+
+    Upon expiration or termination, Lessee shall remove its equipment and
+    restore the Premises to substantially its original condition, reasonable
+    wear and tear excepted.
+
+14. NOTICES.
+
+    All notices shall be in writing and delivered to the addresses set forth
+    below or such other address as a party may designate.
+
+15. QUIET ENJOYMENT.
+
+    Lessor covenants that Lessee shall peaceably hold and enjoy the Premises
+    during the Term.
+
+16. GOVERNING LAW.
+
+    This Agreement shall be governed by the laws of the state in which the Land
+    is located.
+
+                        [SECTIONS 17 THROUGH 22 ELIDED]
+
+IN WITNESS WHEREOF the parties have executed this Agreement as of the date first
+written above.
+
+LESSOR: PLACEHOLDER HOLDINGS LLC          LESSEE: SAMPLE WIRELESS INC.
+
+By: ______________________                By: ______________________

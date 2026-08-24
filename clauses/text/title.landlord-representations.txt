@@ -1,0 +1,11 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+{{LandlordTitle}} REPRESENTATIONS. {{LandlordTitle}} represents and warrants that, as of the date of this Amendment:
+
+(a) {{LandlordTitle}} is the owner of the {{PropertyName}} in fee simple, or otherwise holds an interest sufficient to grant the rights conveyed under the Agreement, and has full authority to enter into and perform this Amendment;
+
+(b) execution and performance of this Amendment does not and will not violate any law, covenant, condition, restriction, mortgage, deed of trust or other agreement binding on {{LandlordTitle}} or the {{PropertyName}};
+
+(c) there is no lien, encumbrance, easement, restriction or other matter of record or otherwise known to {{LandlordTitle}} that would interfere with {{TenantTitle}}'s use of the {{AreaName}} as permitted under the Agreement; and
+
+(d) {{LandlordTitle}} has received no notice of any pending or threatened condemnation, environmental proceeding or violation of law affecting the {{PropertyName}}.

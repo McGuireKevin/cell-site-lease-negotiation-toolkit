@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+DESCRIPTION OF THE {{AreaName}}. The {{AreaName}} is as depicted on the exhibit attached to this Amendment, which is incorporated by reference and which supersedes any prior exhibit, sketch or written description of the {{AreaName}} in the Agreement or in any prior amendment.
+
+The parties acknowledge that the exhibit depicts the {{EquipmentName}} and associated improvements as actually installed as of the date of this Amendment, and agree that such installation is and has been in compliance with the Agreement.
+
+In the event of any conflict between the exhibit and a written description of the {{AreaName}}, the exhibit controls. {{TenantTitle}} may, at its cost, cause a survey of the {{AreaName}} and of any access and utility easement to be prepared, and upon delivery to {{LandlordTitle}} that survey will replace the exhibit without further action by either party.

@@ -1,0 +1,9 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+RIGHT OF FIRST REFUSAL. If {{LandlordTitle}} receives a bona fide written offer from a third party to purchase, or to obtain an assignment of, an easement over, or any other interest in, all or any part of the {{AreaName}}, the Agreement, or the rental stream payable under the Agreement, {{LandlordTitle}} will give {{TenantTitle}} written notice of the offer together with a complete copy of it and of all documents evidencing its terms.
+
+{{TenantTitle}} will have {{ROFR_Notice_Days}} days from receipt of that notice to elect, by written notice to {{LandlordTitle}}, to purchase or acquire the interest on the same terms. If {{TenantTitle}} so elects, {{LandlordTitle}} will convey the interest to {{TenantTitle}} on those terms.
+
+If {{TenantTitle}} does not elect within that period, {{LandlordTitle}} may complete the transaction with that third party on terms no more favourable to the third party than those offered to {{TenantTitle}}, provided the transaction closes within one hundred and eighty (180) days. Any change in terms, or any failure to close within that period, reinstates {{TenantTitle}}'s right in full.
+
+This right runs with the {{PropertyName}} and binds {{LandlordTitle}}'s successors. A conveyance made in breach of this paragraph is void and of no effect as against {{TenantTitle}}.

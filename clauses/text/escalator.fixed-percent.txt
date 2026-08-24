@@ -1,0 +1,5 @@
+Section {{sectionMap.rent}} of the Agreement is hereby amended as follows:
+
+ESCALATION. Commencing on the first anniversary of {{Extension_Term_Start_Date}} and on each anniversary thereafter, the {{RentName}} shall increase by {{EscalatorProposal}} percent of the {{RentName}} payable during the immediately preceding twelve (12) month period.
+
+No other index, adjustment, surcharge or escalation shall apply to the {{RentName}}.

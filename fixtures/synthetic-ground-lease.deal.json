@@ -1,0 +1,220 @@
+{
+  "schemaVersion": "1.0",
+  "confidential": false,
+  "_comment": "SYNTHETIC. Invented site, invented parties, round numbers. Safe to commit. Never replace these values with a real deal — save real work outside the repo, where *.deal.json and deals/ are gitignored. NOTE the shape of this fixture: rent.chargeBasis is 'flat' and there is deliberately NO equipment array, because that is the common case — a stated rent, with square footage describing the premises rather than driving a rate. A full itemised manifest is uncommon and usually means a restrictive tower-company licence.",
+
+  "glob": {
+    "projectName": "Sample Ridge Tower — Site 0001",
+    "windowStart": "2026-01-01",
+    "windowEnd": "2046-01-01",
+    "pvReferenceDate": "2026-01-01",
+    "discountRatePct": 6.5,
+    "assumedCpiPct": 3,
+    "baselineMode": "continue"
+  },
+
+  "site": {
+    "fan": "00000001",
+    "siteName": "SAMPLE RIDGE",
+    "siteType": "tower",
+    "sqft": 2500,
+    "address": { "line1": "1 Example Road", "city": "Springfield", "state": "ZZ", "zip": "00000" },
+    "landlord": { "name": "Placeholder Holdings LLC", "address": "1 Example Road, Springfield ZZ 00000" },
+    "tenant": "Sample Wireless Inc."
+  },
+
+  "documentChain": [
+    { "id": "original", "statedTitle": "Tower Structure Lease Agreement", "chronologicalOrdinal": 0,
+      "date": "2006-05-01", "documentType": "Lease", "sourceFile": "" },
+    { "id": "amend-1", "statedTitle": "First Amendment to Lease Agreement", "chronologicalOrdinal": 1,
+      "date": "2011-09-15", "documentType": "Lease", "sourceFile": "" },
+    { "id": "amend-2", "statedTitle": "First Amendment to Lease Agreement", "chronologicalOrdinal": 2,
+      "date": "2016-03-30", "documentType": "Lease", "sourceFile": "" }
+  ],
+
+  "definedTerms": {
+    "RentName":      { "value": "Rent",                  "definedIn": "original", "section": "4",  "redefinedHere": false },
+    "TermName":      { "value": "Term",                  "definedIn": "original", "section": "3",  "redefinedHere": false },
+    "ExtensionName": { "value": "Extension Term",        "definedIn": "amend-1",  "section": "2",  "redefinedHere": false },
+    "AreaName":      { "value": "Premises",              "definedIn": "original", "section": "1",  "redefinedHere": false },
+    "PropertyName":  { "value": "Property",              "definedIn": "",         "section": "",   "redefinedHere": true,
+                       "note": "Never defined in the chain. Clauses that use it undefined must define it or be reworded." },
+    "EquipmentName": { "value": "Communication Facility", "definedIn": "original", "section": "6", "redefinedHere": false },
+    "LandlordTitle": { "value": "Landlord",              "definedIn": "original", "section": "preamble", "redefinedHere": false },
+    "TenantTitle":   { "value": "Tenant",                "definedIn": "original", "section": "preamble", "redefinedHere": false },
+    "DocumentType":  { "value": "Lease",                 "definedIn": "original", "section": "preamble", "redefinedHere": false },
+    "LeaseDocument": { "value": "Lease Agreement",       "definedIn": "original", "section": "preamble", "redefinedHere": false }
+  },
+
+  "sectionMap": {
+    "term": "3",
+    "rent": "4(a) and 4(b)",
+    "permittedUse": "6",
+    "access": "9",
+    "defaultCure": "15",
+    "termination": "20"
+  },
+
+  "term": {
+    "commencementDate": "2006-05-01",
+    "currentTermEnd": "2026-04-30",
+    "extensionTermStart": "2026-05-01",
+    "finalTermEnd": "2046-04-30",
+    "nnrDueDate": "2025-11-01"
+  },
+
+  "options": [
+    { "count": 4, "lengthMonths": 60, "noticeDays": 180, "exercised": false, "automatic": true }
+  ],
+
+  "rent": {
+    "chargeBasis": "flat",
+    "figures": [
+      { "amount": 2100, "basis": "monthly", "source": "audited",    "asOf": "2026-01-01", "note": "Escalated from the 2006 commencement rent." },
+      { "amount": 2100, "basis": "monthly", "source": "books",      "asOf": "2026-01-01", "note": "" },
+      { "amount": 1850, "basis": "monthly", "source": "offered",    "asOf": "2026-02-01", "note": "Opening position." }
+    ],
+    "reconciled": { "amount": 2100, "basis": "monthly", "note": "Audited and books agree; the offered figure is a proposal, not a current rent." }
+  },
+
+  "marketBenchmark": {
+    "metro": "Springfield",
+    "tier": "Tier 3 - Mid market",
+    "tierMultiplier": 0.8,
+    "indicatedMonthly": 2450,
+    "contractVsIndicated": 0.86,
+    "flag": "in_band",
+    "asOf": "2026-01-01"
+  },
+
+  "audit": {
+    "auditedOn": "2026-01-05",
+    "auditedBy": "sample-agent",
+    "reviewedBy": "sample-reviewer",
+
+    "sources": [
+      { "kind": "original-lease", "ref": "sample-original.pdf" },
+      { "kind": "amendment",      "ref": "sample-amend-1.pdf" },
+      { "kind": "amendment",      "ref": "sample-amend-2.pdf" },
+      { "kind": "database-record","ref": "SAMPLE-0001" }
+    ],
+
+    "triage": {
+      "financials": "at-market",
+      "terms": "problematic",
+      "recommendation": "pursue",
+      "rationale": "Rent is inside the band, so there is no rent-reduction case on these numbers. The terms case is the reason to proceed: no termination right for convenience anywhere in the chain, sublease consent standard unstated, and 'Property' used but never defined. The NNR deadline of 2025-11-01 has also already passed for the current cycle."
+    },
+
+    "terms": {
+      "term.current-end":                 { "value": "30 April 2026", "status": "found", "source": "audited", "documentRef": "amend-2", "sectionRef": "2" },
+      "term.options-remaining":           { "value": "4 x 5 years, automatic on 180 days notice", "status": "found", "source": "audited", "documentRef": "amend-1", "sectionRef": "2" },
+      "term.nnr-date":                    { "value": "1 November 2025", "status": "found", "source": "audited", "documentRef": "amend-1", "sectionRef": "2" },
+      "escalator.rate":                   { "value": "3% annually on the anniversary", "status": "found", "source": "audited", "documentRef": "original", "sectionRef": "4(b)" },
+      "termination.tenant-convenience":   { "value": "", "status": "absent", "source": "audited", "documentRef": "", "sectionRef": "",
+                                            "notes": "No convenience termination anywhere in the chain. This is the main ask." },
+      "access.hours":                     { "value": "24/7, no additional charge", "status": "found", "source": "audited", "documentRef": "original", "sectionRef": "9" },
+      "sublease.rights":                  { "value": "Assignment permitted; sublease requires consent", "status": "ambiguous", "source": "audited", "documentRef": "original", "sectionRef": "12",
+                                            "notes": "Consent standard is not stated, so it is arguable either way." },
+      "property.description":             { "value": "", "status": "absent", "source": "audited", "documentRef": "", "sectionRef": "",
+                                            "notes": "'Property' is used but never defined — see definedTerms.PropertyName." }
+    },
+
+    "termsAnalysis": {
+      "findings": [
+        { "clauseId": "termination.convenience-no-fee", "state": "absent", "gap": 3, "priority": "must-have",
+          "summary": "No convenience termination anywhere in the chain.",
+          "note": "The main ask. Without it the site cannot be exited on a technology change." },
+
+        { "clauseId": "interference.tenant-protection", "state": "absent", "gap": 3, "priority": "should-have",
+          "summary": "Nothing addresses interference from other users of the property.",
+          "note": "Needs PropertyName, which this lease never defines — see definedTerms." },
+
+        { "clauseId": "title.snda", "state": "absent", "gap": 3, "priority": "should-have",
+          "summary": "No subordination or non-disturbance provision.",
+          "note": "A foreclosure would extinguish the lease and the site with it." },
+
+        { "clauseId": "sublease.assignment", "state": "unclear", "gap": 2, "priority": "should-have",
+          "documentRef": "original", "sectionRef": "12",
+          "summary": "Assignment permitted; sublease requires consent, standard unstated.",
+          "note": "Arguable either way as drafted." },
+
+        { "clauseId": "access.24-7", "state": "present-equivalent", "gap": 0, "priority": "do-not-raise",
+          "documentRef": "original", "sectionRef": "9",
+          "summary": "24/7 access at no additional charge is already granted.",
+          "note": "Nothing to gain, and reopening it risks the charge-free element." },
+
+        { "clauseId": "colocation.revenue-share", "state": "present-better", "gap": -2, "priority": "do-not-raise",
+          "documentRef": "original", "sectionRef": "8",
+          "summary": "Co-location is permitted with NO revenue share to the landlord.",
+          "note": "Better than the library, which pairs the right with a share. Defend it. Raising co-location at all invites the landlord to price it." }
+      ],
+      "summary": { "criticalGaps": 3, "totalGap": 9, "leaseIsBetter": 1 }
+    }
+  },
+
+  "current": {
+    "termEnd": "2026-04-30",
+    "baseRent": 2100,
+    "rentBasis": "monthly",
+    "cadenceMonths": 1,
+    "firstPaymentDate": "2026-01-01",
+    "paymentTiming": "advance",
+    "prorationBasis": "prorated",
+    "prorationConvention": "actual_month",
+    "paymentDayRule": "anchored",
+    "escalators": [
+      { "appliesFrom": "", "appliesTo": "", "type": "fixed_pct", "ratePct": 3,
+        "cadenceMonths": 12, "firstAdjustment": "2026-05-01", "compounding": "on_prior",
+        "floorPctIn": "", "capPctIn": "" }
+    ],
+    "oneTimePayments": []
+  },
+
+  "proposals": [
+    {
+      "id": "p0001",
+      "label": "Proposal — 15 year extension at 1,850",
+      "effectiveDate": "2026-05-01",
+      "rentMode": "absolute",
+      "rentValue": 1850,
+      "rentBasis": "monthly",
+      "termEnd": "2041-04-30",
+      "cadenceMonths": 1,
+      "firstPaymentDate": "2026-05-01",
+      "paymentTiming": "advance",
+      "prorationBasis": "prorated",
+      "prorationConvention": "actual_month",
+      "paymentDayRule": "anchored",
+      "escalators": [
+        { "appliesFrom": "", "appliesTo": "", "type": "fixed_pct", "ratePct": 10,
+          "cadenceMonths": 60, "firstAdjustment": "2031-05-01", "compounding": "on_prior",
+          "floorPctIn": "", "capPctIn": "" }
+      ],
+      "oneTimePayments": [
+        { "label": "Signing consideration", "date": "2026-05-01", "amount": 10000, "direction": "to_landlord" }
+      ]
+    },
+    {
+      "id": "p0002",
+      "label": "Counter — same term, 3% annual retained",
+      "effectiveDate": "2026-05-01",
+      "rentMode": "pct_of_current",
+      "rentValue": 95,
+      "rentBasis": "monthly",
+      "termEnd": "2041-04-30",
+      "cadenceMonths": 1,
+      "firstPaymentDate": "2026-05-01",
+      "paymentTiming": "advance",
+      "prorationBasis": "prorated",
+      "prorationConvention": "actual_month",
+      "paymentDayRule": "anchored",
+      "escalators": [
+        { "appliesFrom": "", "appliesTo": "", "type": "fixed_pct", "ratePct": 3,
+          "cadenceMonths": 12, "firstAdjustment": "2027-05-01", "compounding": "on_prior",
+          "floorPctIn": "", "capPctIn": "" }
+      ],
+      "oneTimePayments": []
+    }
+  ]
+}

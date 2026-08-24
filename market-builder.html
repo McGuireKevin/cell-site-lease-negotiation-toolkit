@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Market Rate Builder</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#14171a; --panel:#1c2024; --ink:#e7eaef; --muted:#9aa3b0; --line:#2e343b;
+  --header-bg:#191d21;
+  --accent:#6aa8f0; --accent-fill:#2f6fc4; --accent-hover:#3f83d8; --accent-soft:#1d3a5c; --on-accent:#fff;
+  --good:#4ec98a; --bad:#f2837a; --on-good:#06301c;
+  --warn:#e8bd6a; --warn-bg:#332913; --warn-line:#a67c2a; --warn-badge:#8a6100;
+  --err-bg:#3a1f1d; --err-ink:#f3a9a2;
+  --ok-bg:#15301f; --ok-ink:#7fd9a8;
+  --btn-bg:#252a30; --btn-hover:#2e343b; --btn-hover-line:#454d57;
+  --field-bg:#22272c; --th-bg:#22272c; --row-hover:#242a30; --cat-bg:#1a1e22;
+  --card-bg:#1f242a; --info-bg:#22272c; --info-line:#4a525c; --info-ink:#c3cad3;
+  --tip-bg:#1a1d21; --tip-ink:#f2f4f7; --grey:#4d5761;
+  --shadow-sm:rgba(0,0,0,.45); --shadow-lg:rgba(0,0,0,.55);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f4f5f7; --panel:#fff; --ink:#1a1d21; --muted:#6b7280; --line:#dfe3e8;
+  --header-bg:#fff;
+  --accent:#1f5fa9; --accent-fill:#1f5fa9; --accent-hover:#194e8c; --accent-soft:#e8f0fa; --on-accent:#fff;
+  --good:#0f7b4f; --bad:#b3261e; --on-good:#fff;
+  --warn:#8a6100; --warn-bg:#fff8e6; --warn-line:#d99a00; --warn-badge:#8a6100;
+  --err-bg:#fdecea; --err-ink:#7d1a15;
+  --ok-bg:#eaf6ef; --ok-ink:#0b5c3b;
+  --btn-bg:#fff; --btn-hover:#f0f2f5; --btn-hover-line:#c4cad2;
+  --field-bg:#fff; --th-bg:#fafbfc; --row-hover:#f7f9fc; --cat-bg:#eef1f5;
+  --card-bg:#fcfcfd; --info-bg:#fff; --info-line:#b3bac4; --info-ink:#41474f;
+  --tip-bg:#1a1d21; --tip-ink:#f2f4f7; --grey:#8b93a0;
+  --shadow-sm:rgba(0,0,0,.04); --shadow-lg:rgba(0,0,0,.32);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{background:var(--header-bg);border-bottom:1px solid var(--line);padding:12px 20px;position:sticky;top:0;z-index:50;
+       display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 3px var(--shadow-sm)}
+h1{font-size:19px;margin:0;font-weight:650}
+h2{font-size:15px;margin:0 0 12px;font-weight:650}
+.sub{color:var(--muted);font-size:12px}
+.spacer{flex:1}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.wrap{max-width:1080px;margin:0 auto;padding:18px 20px 80px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:var(--btn-bg);border-radius:6px;cursor:pointer;color:var(--ink)}
+button:hover{background:var(--btn-hover);border-color:var(--btn-hover-line)}
+button.primary{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill);font-weight:600}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.sm{padding:3px 8px;font-size:12px}
+label{display:block;font-size:10.5px;color:var(--muted);margin-bottom:3px;font-weight:650;letter-spacing:.03em;text-transform:uppercase}
+input,select,textarea{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:5px;width:100%;background:var(--field-bg);color:var(--ink)}
+textarea{font:12.5px/1.5 var(--mono);min-height:220px;resize:vertical;white-space:pre}
+.grid{display:grid;gap:10px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media (max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.msg{padding:9px 12px;border-radius:6px;margin-bottom:8px;font-size:12.5px}
+.msg.err{background:var(--err-bg);border-left:3px solid var(--bad);color:var(--err-ink)}
+.msg.warn{background:var(--warn-bg);border-left:3px solid var(--warn-line);color:var(--warn)}
+.msg.ok{background:var(--ok-bg);border-left:3px solid var(--good);color:var(--ok-ink)}
+.msg.info{background:var(--info-bg);border-left:3px solid var(--accent);color:var(--info-ink)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--th-bg)}
+td.n,th.n{text-align:right;font-family:var(--mono);white-space:nowrap}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+code{font-family:var(--mono);background:var(--field-bg);padding:1px 4px;border-radius:3px;font-size:12px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--tip-bg);color:var(--tip-ink);
+       padding:10px 18px;border-radius:7px;z-index:999;font-size:13px;max-width:700px;box-shadow:0 4px 14px var(--shadow-lg)}
+.filebtn{position:relative;overflow:hidden;display:inline-block}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.scroll{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+@media print{ header,.noprint{display:none!important} }
+</style>
+<script>
+(function(){ try{ if(localStorage.getItem('leaseComparator_theme')==='light')
+  document.documentElement.setAttribute('data-theme','light'); }catch(e){} })();
+</script>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Market Rate Builder</h1>
+    <div class="sub">Turn a spreadsheet export into a rate file the toolkit can read</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="row noprint">
+    <button class="sm" onclick="loadTemplate()">Load template</button>
+    <span class="filebtn"><button class="sm">Open a rate file</button>
+      <input type="file" accept=".json" onchange="openRates(this)"></span>
+    <button id="dl" class="primary" onclick="download()" disabled>Download rate file</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="msg info">
+    <b>Author wherever you like.</b> Excel, Google Sheets, Numbers, LibreOffice, a text editor.
+    Export CSV, paste it below, and this validates it and writes the JSON. The spreadsheet stays a
+    good place to type forty rows of numbers; it just stops being something the toolkit depends on.
+  </div>
+
+  <div class="panel">
+    <h2>About this dataset</h2>
+    <div class="grid g4">
+      <div><label>Label</label><input id="label" placeholder="e.g. House rates 2026" oninput="build()"></div>
+      <div><label>As of</label><input id="asOf" type="date" oninput="build()"></div>
+      <div><label>Stance</label>
+        <select id="stance" onchange="build()">
+          <option value="conservative">conservative — near the low end</option>
+          <option value="midpoint" selected>midpoint — centre of the range</option>
+          <option value="aggressive">aggressive — near the high end</option>
+        </select>
+      </div>
+      <div><label>Mid position (0 = low, 1 = high)</label>
+        <input id="midPosition" type="number" step="0.05" min="0" max="1" value="0.45" oninput="build()"></div>
+    </div>
+    <div class="grid g4" style="margin-top:10px">
+      <div><label>Low factor</label><input id="lowFactor" type="number" step="0.01" value="0.95" oninput="build()"></div>
+      <div><label>High factor</label><input id="highFactor" type="number" step="0.01" value="0.70" oninput="build()"></div>
+      <div><label>Above threshold</label><input id="above" type="number" step="0.01" value="1.25" oninput="build()"></div>
+      <div><label>Below threshold</label><input id="below" type="number" step="0.01" value="0.80" oninput="build()"></div>
+    </div>
+    <div style="margin-top:10px">
+      <label>Source — where these figures came from</label>
+      <input id="source" placeholder="e.g. tower REIT filings, published lease surveys, county records" oninput="build()">
+    </div>
+    <div style="margin-top:10px">
+      <label>Stance note — what a reader should know before quoting it</label>
+      <input id="stanceNote" placeholder="Say plainly what this file is and is not." oninput="build()">
+    </div>
+    <p class="hint">
+      <b>The factors are the house position, in one place.</b> Published low &times; low factor and
+      published high &times; high factor set the band; mid position places the recommendation inside
+      it. Making a whole dataset more or less conservative is three numbers here, not a re-export of
+      every row.
+    </p>
+  </div>
+
+  <div class="panel">
+    <h2>Tiers</h2>
+    <p class="hint" style="margin-top:0">
+      <code>id,label,multiplier,rooftopPremium</code> &mdash; one per line. The multiplier scales
+      equipment and space adders; the rooftop premium is what an elevated structure carries over
+      ground in the same market.
+    </p>
+    <textarea id="tiersCsv" style="min-height:120px" oninput="build()"></textarea>
+  </div>
+
+  <div class="panel">
+    <h2>Metros</h2>
+    <p class="hint" style="margin-top:0">
+      <code>metro,tier,publishedLow,publishedHigh,basis</code> &mdash; <code>basis</code> is
+      <code>published</code>, <code>analogy</code> or <code>benchmark</code>. Say which: a figure
+      extrapolated from a neighbouring market is not the same kind of thing as a published one, and
+      six months later nobody remembers which was which.
+    </p>
+    <textarea id="metrosCsv" oninput="build()"></textarea>
+  </div>
+
+  <div class="panel">
+    <h2>Equipment adders and space rates</h2>
+    <p class="hint" style="margin-top:0">
+      Adders: <code>category,item,baseline,tierScaled,note</code>.
+      Space: <code>spaceType,unit,baseline,tierScaled,note</code>.
+      <b>One baseline per item.</b> Per-tier figures are the baseline times the tier multiplier and
+      are computed at load &mdash; set <code>tierScaled</code> to <code>false</code> for the rows
+      where that does not hold, rather than writing the numbers out.
+    </p>
+    <div class="grid g2">
+      <div><label>Equipment adders</label><textarea id="addersCsv" oninput="build()"></textarea></div>
+      <div><label>Space rates</label><textarea id="spaceCsv" oninput="build()"></textarea></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Result</h2>
+    <div id="report"></div>
+    <div id="preview" class="scroll"></div>
+  </div>
+
+</div>
+
+<script src="src/market-derive.js"></script>
+<script>
+/* =============================================================================
+   Market Rate Builder.
+
+   Validation and derivation come from src/market-derive.js — the same functions
+   market.html uses — so a file that passes here behaves identically there.
+   ============================================================================= */
+let built = null;
+
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => (n==null||isNaN(n))?'—':Number(n).toLocaleString('en-US',{maximumFractionDigits:0});
+
+/* A CSV parser that handles quoted fields, because metro names contain commas
+   — "New York, NY" splits into two columns without it, and the failure is a
+   shifted row rather than an error. */
+function parseCsv(text){
+  const rows = [];
+  let row = [], field = '', q = false;
+  const s = String(text||'').replace(/\r\n?/g, '\n');
+  for(let i = 0; i < s.length; i++){
+    const c = s[i];
+    if(q){
+      if(c === '"'){ if(s[i+1] === '"'){ field += '"'; i++; } else q = false; }
+      else field += c;
+    } else if(c === '"') q = true;
+    else if(c === ','){ row.push(field); field = ''; }
+    else if(c === '\n'){ row.push(field); field = '';
+      if(row.some(x => x.trim() !== '')) rows.push(row);
+      row = []; }
+    else field += c;
+  }
+  row.push(field);
+  if(row.some(x => x.trim() !== '')) rows.push(row);
+  return rows;
+}
+
+/* Drops a header line if it looks like one — people paste with and without. */
+function dropHeader(rows, firstCol){
+  if(!rows.length) return rows;
+  const a = (rows[0][0] || '').trim().toLowerCase();
+  return a === firstCol.toLowerCase() ? rows.slice(1) : rows;
+}
+
+const numOr = (v, d) => { const n = Number(String(v||'').replace(/[$,\s]/g,'')); return isNaN(n) ? d : n; };
+const boolOr = (v, d) => { const s = String(v||'').trim().toLowerCase();
+  return s === '' ? d : !(s === 'false' || s === 'no' || s === '0'); };
+
+function build(){
+  const rates = {
+    schemaVersion: '1.0',
+    label: document.getElementById('label').value || 'Market rates',
+    asOf: document.getElementById('asOf').value || '',
+    currency: 'USD',
+    source: document.getElementById('source').value || '',
+    stance: document.getElementById('stance').value,
+    stanceNote: document.getElementById('stanceNote').value || '',
+    derivation: {
+      lowFactor: numOr(document.getElementById('lowFactor').value, 0.95),
+      highFactor: numOr(document.getElementById('highFactor').value, 0.70),
+      midPosition: numOr(document.getElementById('midPosition').value, 0.45)
+    },
+    thresholds: {
+      above: numOr(document.getElementById('above').value, 1.25),
+      below: numOr(document.getElementById('below').value, 0.80)
+    },
+    tiers: dropHeader(parseCsv(document.getElementById('tiersCsv').value), 'id').map(r => ({
+      id: (r[0]||'').trim(), label: (r[1]||'').trim(),
+      multiplier: numOr(r[2], 1), rooftopPremium: numOr(r[3], 1)
+    })).filter(t => t.id),
+    metros: dropHeader(parseCsv(document.getElementById('metrosCsv').value), 'metro').map(r => ({
+      metro: (r[0]||'').trim(), tier: (r[1]||'').trim(),
+      publishedLow: numOr(r[2], 0), publishedHigh: numOr(r[3], 0),
+      basis: (r[4]||'published').trim().toLowerCase()
+    })).filter(m => m.metro),
+    equipmentAdders: dropHeader(parseCsv(document.getElementById('addersCsv').value), 'category').map(r => ({
+      category: (r[0]||'').trim(), item: (r[1]||'').trim(),
+      baseline: numOr(r[2], 0), tierScaled: boolOr(r[3], true), note: (r[4]||'').trim()
+    })).filter(e => e.item),
+    spaceRates: dropHeader(parseCsv(document.getElementById('spaceCsv').value), 'spacetype').map(r => ({
+      spaceType: (r[0]||'').trim(), unit: (r[1]||'').trim(),
+      baseline: numOr(r[2], 0), tierScaled: boolOr(r[3], true), note: (r[4]||'').trim()
+    })).filter(s => s.spaceType)
+  };
+
+  const v = validateMarket(rates);
+  built = v.errors.length ? null : rates;
+  document.getElementById('dl').disabled = !built;
+
+  let h = '';
+  if(v.errors.length){
+    h += `<div class="msg err"><b>${v.errors.length} problem${v.errors.length>1?'s':''} — not ready.</b></div>`;
+    h += v.errors.slice(0,12).map(e=>`<div class="msg err">${esc(e)}</div>`).join('');
+  } else if(rates.metros.length){
+    h += `<div class="msg ok"><b>Valid.</b> ${rates.metros.length} metros, ${rates.tiers.length} tiers,
+          ${rates.equipmentAdders.length} adders, ${rates.spaceRates.length} space rates.</div>`;
+  } else {
+    h += `<div class="msg info">Paste your rows above, or load the template to see the shape.</div>`;
+  }
+  h += v.warnings.slice(0,8).map(w=>`<div class="msg warn">${esc(w)}</div>`).join('');
+  document.getElementById('report').innerHTML = h;
+
+  /* Show what the tool will actually compute, not what was typed. The whole
+     point of the format is that the bands are derived, so the preview has to
+     show the derived numbers or it is not showing the file. */
+  if(built && rates.metros.length){
+    const M = deriveMarket(built);
+    const c = n => M.metroCols.indexOf(n);
+    document.getElementById('preview').innerHTML =
+      `<table><tr><th>Metro</th><th>Tier</th><th class="n">Published</th>
+       <th class="n">Rec. low</th><th class="n">Rec. mid</th><th class="n">Rec. high</th>
+       <th class="n">Rooftop mid</th><th>Basis</th></tr>` +
+      M.metros.map(r=>`<tr><td>${esc(r[c('metro')])}</td><td>${esc(r[c('tier')])}</td>
+        <td class="n">${money(r[c('publishedLow')])}–${money(r[c('publishedHigh')])}</td>
+        <td class="n">${money(r[c('groundLow')])}</td>
+        <td class="n">${money(r[c('groundMid')])}</td>
+        <td class="n">${money(r[c('groundHigh')])}</td>
+        <td class="n">${money(r[c('rooftopMid')])}</td>
+        <td>${esc(r[c('source')])}</td></tr>`).join('') + `</table>`;
+  } else {
+    document.getElementById('preview').innerHTML = '';
+  }
+}
+
+function download(){
+  if(!built){ return; }
+  const name = (built.label || 'market').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase();
+  const b = new Blob([JSON.stringify(built, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = name + '.rates.json';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},0);
+  toast('Saved. The .rates.json suffix is gitignored, so it will not land in the repository.');
+}
+
+/* Open an existing rate file and edit it — including the bundled illustrative
+   one, which is the usual starting point. */
+function openRates(inp){
+  const f = inp.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const m = JSON.parse(r.result);
+      document.getElementById('label').value = m.label || '';
+      document.getElementById('asOf').value = m.asOf || '';
+      document.getElementById('source').value = m.source || '';
+      document.getElementById('stanceNote').value = m.stanceNote || '';
+      if(m.stance) document.getElementById('stance').value = m.stance;
+      const d = m.derivation || {};
+      document.getElementById('lowFactor').value = d.lowFactor != null ? d.lowFactor : 0.95;
+      document.getElementById('highFactor').value = d.highFactor != null ? d.highFactor : 0.70;
+      document.getElementById('midPosition').value = d.midPosition != null ? d.midPosition : 0.45;
+      const t = m.thresholds || {};
+      document.getElementById('above').value = t.above != null ? t.above : 1.25;
+      document.getElementById('below').value = t.below != null ? t.below : 0.80;
+      const q = s => /[",\n]/.test(String(s||'')) ? '"' + String(s).replace(/"/g,'""') + '"' : String(s||'');
+      document.getElementById('tiersCsv').value =
+        (m.tiers||[]).map(x=>[x.id,q(x.label),x.multiplier,x.rooftopPremium].join(',')).join('\n');
+      document.getElementById('metrosCsv').value =
+        (m.metros||[]).map(x=>[q(x.metro),x.tier,x.publishedLow,x.publishedHigh,x.basis].join(',')).join('\n');
+      document.getElementById('addersCsv').value =
+        (m.equipmentAdders||[]).map(x=>[q(x.category),q(x.item),x.baseline,x.tierScaled!==false,q(x.note)].join(',')).join('\n');
+      document.getElementById('spaceCsv').value =
+        (m.spaceRates||[]).map(x=>[q(x.spaceType),q(x.unit),x.baseline,x.tierScaled!==false,q(x.note)].join(',')).join('\n');
+      build();
+      toast('Loaded ' + f.name + '. Edit and download when you are done.');
+    }catch(e){ alert('Could not read that file: ' + e.message); }
+    inp.value='';
+  };
+  r.readAsText(f);
+}
+
+function loadTemplate(){
+  document.getElementById('label').value = 'My market rates';
+  const d = new Date();
+  document.getElementById('asOf').value =
+    d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  document.getElementById('source').value = 'Say where these came from.';
+  document.getElementById('stanceNote').value =
+    'Say what this file is and is not, for whoever opens it next.';
+  document.getElementById('tiersCsv').value =
+`id,label,multiplier,rooftopPremium
+tier-1a,Tier 1A - Gateway,1.8,1.45
+tier-1b,Tier 1B - Dense metro,1.4,1.3
+tier-2,Tier 2 - Major metro,1,1.2
+tier-3,Tier 3 - Mid market,0.8,1.1
+tier-4,Tier 4 - Small metro / rural,0.65,1`;
+  document.getElementById('metrosCsv').value =
+`metro,tier,publishedLow,publishedHigh,basis
+"Your metro, ST",tier-2,900,3000,published
+Suburban / exurban,tier-4,500,1400,benchmark`;
+  document.getElementById('addersCsv').value =
+`category,item,baseline,tierScaled,note
+ANTENNAS,Panel antenna - standard (<50 lb),90,true,The workhorse adder.
+MICROWAVE,MW dish - 2 ft,225,true,Bands by diameter, not weight.`;
+  document.getElementById('spaceCsv').value =
+`spaceType,unit,baseline,tierScaled,note
+Ground compound - primary,$ / sq ft / month,2.5,true,Sanity-check against base rent.`;
+  build();
+  toast('Template loaded. Replace the rows with your own.');
+}
+
+function toast(m){
+  const d=document.createElement('div'); d.className='toast'; d.textContent=m;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),3400);
+}
+
+build();
+</script>
+</body>
+</html>

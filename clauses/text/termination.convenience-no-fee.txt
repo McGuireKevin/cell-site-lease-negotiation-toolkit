@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+TERMINATION. {{TenantTitle}} may terminate this {{DocumentType}} at any time, for any reason or for no reason, upon one hundred eighty (180) days prior written notice to {{LandlordTitle}}. No termination fee, early termination charge or other consideration shall be payable by {{TenantTitle}} in connection with a termination under this paragraph.
+
+Upon the effective date of termination, {{RentName}} and all other charges shall be prorated to that date, {{LandlordTitle}} shall refund any prepaid amounts attributable to the period after it, and neither party shall have any further obligation except those which by their terms survive.

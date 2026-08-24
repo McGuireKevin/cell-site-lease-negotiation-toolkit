@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+REAL PROPERTY TAX INCREASE. {{TenantTitle}} will reimburse {{LandlordTitle}} for the documented increase in real property taxes levied against the {{PropertyName}} to the extent, and only to the extent, that such increase is directly attributable to {{TenantTitle}}'s improvements on the {{AreaName}}.
+
+As a condition to reimbursement, {{LandlordTitle}} will deliver to {{TenantTitle}} a copy of the tax bill together with documentation from the assessing authority identifying the portion of the assessment attributable to {{TenantTitle}}'s improvements. {{TenantTitle}} will have no obligation with respect to any increase arising from a reassessment on transfer of the {{PropertyName}}, from a general change in rates or valuation, or from improvements made by or for any other occupant.
+
+{{TenantTitle}} may contest any such assessment in {{LandlordTitle}}'s name at {{TenantTitle}}'s cost, and {{LandlordTitle}} will cooperate reasonably in that contest. Any reimbursement is payable within sixty (60) days of receipt of the required documentation and is not {{RentName}} for any purpose, including escalation.

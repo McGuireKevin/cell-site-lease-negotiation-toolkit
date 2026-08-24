@@ -1,0 +1,13 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+PERMANENT RELOCATION. {{LandlordTitle}} may request that the {{EquipmentName}} be permanently relocated within the {{PropertyName}}. Any such relocation is subject to {{TenantTitle}}'s prior written consent and to all of the following:
+
+(a) the proposed location is comparable to the {{AreaName}} in size, elevation, line of sight and access, and is acceptable to {{TenantTitle}} in its reasonable technical judgment;
+
+(b) {{LandlordTitle}} bears the entire cost of the relocation, including design, permitting, construction, equipment moves and any required structural work;
+
+(c) all permits and approvals required for the new location have been obtained before the relocation begins; and
+
+(d) the relocation is carried out without interruption to the operation of the {{EquipmentName}}, or if brief interruption is unavoidable, at a time approved by {{TenantTitle}} in advance.
+
+If {{TenantTitle}} determines that no comparable location is available on the {{PropertyName}}, {{TenantTitle}} is under no obligation to relocate, and {{LandlordTitle}} will have no right to terminate the Agreement on that basis.

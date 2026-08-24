@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+RESERVED CAPACITY AND ELEVATION. {{LandlordTitle}} will reserve for {{TenantTitle}}, for the duration of the {{TermName}}, sufficient structural capacity on the structure to support the {{EquipmentName}} as installed as of the date of this Amendment, together with the antenna mounting positions centred at approximately {{RAD_Center_Feet}} feet above ground level.
+
+{{LandlordTitle}} will not relocate, lower or require modification of the {{EquipmentName}} in a manner that reduces that elevation, and will not permit any installation by a third party that would require such a reduction or that would consume the reserved capacity.
+
+If a structural modification of the structure becomes necessary to accommodate a third party, {{LandlordTitle}} will bear its cost and will ensure that {{TenantTitle}}'s elevation and capacity are preserved.

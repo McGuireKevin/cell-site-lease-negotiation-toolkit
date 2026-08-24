@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+LATE PAYMENT. No late fee, interest or other charge will accrue on any {{RentName}} payment unless {{LandlordTitle}} has given {{TenantTitle}} written notice that the payment has not been received and the payment remains unpaid for thirty (30) days after that notice.
+
+Where a charge does accrue, it will not exceed the lesser of one percent (1%) per month of the overdue amount or the maximum rate permitted by applicable law.
+
+No such charge will accrue where non-payment results from {{LandlordTitle}}'s failure to provide current payment or remittance information, from a change in {{LandlordTitle}}'s ownership, notice address or payment details, or from {{LandlordTitle}}'s failure to deliver any documentation reasonably required by {{TenantTitle}} to process payment.

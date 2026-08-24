@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+STAND-BY POWER. {{TenantTitle}} may install, operate, maintain and replace a stand-by generator, associated fuel storage and battery back-up systems within the {{AreaName}} or at another location on the {{PropertyName}} approved by {{LandlordTitle}}, such approval not to be unreasonably withheld, conditioned or delayed.
+
+Fuel will be stored in accordance with applicable law and in a container meeting applicable code. {{TenantTitle}} may operate the generator without restriction during any interruption of commercial power and during emergencies.
+
+Routine testing will be limited to normal business hours on weekdays, not more often than once per week, except where a longer or differently scheduled test is required by law, by the equipment manufacturer, or by {{TenantTitle}}'s network reliability standards.

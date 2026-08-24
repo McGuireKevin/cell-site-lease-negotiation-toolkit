@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Site Rate Builder</title>
+<style>
+/* ---------- theme tokens ----------
+   Shares the comparator's palette exactly, so the two tools are visibly one
+   toolkit. DARK IS THE DEFAULT; light is opt-in via <html data-theme="light">,
+   toggled from the admin toolbar (Ctrl+Shift+A) and remembered per machine.
+   Every colour below is a token — no raw hex in the rules that follow, or it
+   will not flip with the theme.                                             */
+:root{
+  color-scheme:dark;
+  --bg:#14171a; --panel:#1c2024; --ink:#e7eaef; --muted:#9aa3b0; --line:#2e343b;
+  --header-bg:#191d21;
+  --accent:#6aa8f0; --accent-fill:#2f6fc4; --accent-hover:#3f83d8; --accent-soft:#1d3a5c; --on-accent:#fff;
+  --good:#4ec98a; --bad:#f2837a;
+  --warn:#e8bd6a; --warn-bg:#332913; --warn-line:#a67c2a; --warn-badge:#8a6100;
+  --err-bg:#3a1f1d; --err-ink:#f3a9a2;
+  --ok-bg:#15301f; --ok-ink:#7fd9a8;
+  --btn-bg:#252a30; --btn-hover:#2e343b; --btn-hover-line:#454d57;
+  --field-bg:#22272c;
+  --th-bg:#22272c; --row-hover:#242a30; --cat-bg:#1a1e22;
+  --card-bg:#1f242a; --kpi-bg:#1f242a; --kpi-base-bg:#1a2632;
+  --info-bg:#22272c; --info-line:#4a525c; --info-ink:#c3cad3;
+  --tip-bg:#1a1d21; --tip-ink:#f2f4f7;
+  --shadow-sm:rgba(0,0,0,.45); --shadow-lg:rgba(0,0,0,.55);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f4f5f7; --panel:#fff; --ink:#1a1d21; --muted:#6b7280; --line:#dfe3e8;
+  --header-bg:#fff;
+  --accent:#1f5fa9; --accent-fill:#1f5fa9; --accent-hover:#194e8c; --accent-soft:#e8f0fa; --on-accent:#fff;
+  --good:#0f7b4f; --bad:#b3261e;
+  --warn:#8a6100; --warn-bg:#fff8e6; --warn-line:#d99a00; --warn-badge:#8a6100;
+  --err-bg:#fdecea; --err-ink:#7d1a15;
+  --ok-bg:#eaf6ef; --ok-ink:#0b5c3b;
+  --btn-bg:#fff; --btn-hover:#f0f2f5; --btn-hover-line:#c4cad2;
+  --field-bg:#fff;
+  --th-bg:#fafbfc; --row-hover:#f7f9fc; --cat-bg:#eef1f5;
+  --card-bg:#fcfcfd; --kpi-bg:#fff; --kpi-base-bg:#f8fbfe;
+  --info-bg:#fff; --info-line:#b3bac4; --info-ink:#41474f;
+  --tip-bg:#1a1d21; --tip-ink:#f2f4f7;
+  --shadow-sm:rgba(0,0,0,.04); --shadow-lg:rgba(0,0,0,.32);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{background:var(--header-bg);border-bottom:1px solid var(--line);padding:12px 20px;position:sticky;top:0;z-index:50;
+       display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 3px var(--shadow-sm)}
+h1{font-size:19px;margin:0;font-weight:650}
+h2{font-size:15px;margin:0 0 12px;font-weight:650}
+h3{font-size:11px;margin:0 0 8px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.sub{color:var(--muted);font-size:12px}
+.spacer{flex:1}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 80px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:var(--btn-bg);border-radius:6px;cursor:pointer;color:var(--ink)}
+button:hover{background:var(--btn-hover);border-color:var(--btn-hover-line)}
+button.primary{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill);font-weight:600}
+button.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+label{display:block;font-size:10.5px;color:var(--muted);margin-bottom:3px;font-weight:650;letter-spacing:.03em;text-transform:uppercase}
+input,select{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:5px;width:100%;background:var(--field-bg);color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+input[type=number]{font-family:var(--mono)}
+.grid{display:grid;gap:10px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line)}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;background:var(--th-bg)}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr:hover{background:var(--row-hover)}
+tr.cat td{background:var(--cat-bg);color:var(--accent);font-weight:700;font-size:11px;
+          text-transform:uppercase;letter-spacing:.05em}
+tr.total td{font-weight:700;background:var(--row-hover)}
+input.cnt{width:70px;text-align:right;font-family:var(--mono)}
+.cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin-bottom:14px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:13px;background:var(--kpi-bg)}
+.kpi.big{border-color:var(--accent);background:var(--kpi-base-bg)}
+.kpi .lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:5px}
+.kpi .val{font-size:22px;font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .note{font-size:11px;color:var(--muted);margin-top:4px}
+.flag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.04em}
+.flag.above{background:var(--err-bg);color:var(--err-ink);border:1px solid var(--bad)}
+.flag.below{background:var(--ok-bg);color:var(--ok-ink);border:1px solid var(--good)}
+.flag.band{background:var(--info-bg);color:var(--muted);border:1px solid var(--line)}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;
+  background:var(--warn-badge);color:var(--on-accent);letter-spacing:.05em;text-transform:uppercase}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+.msg{padding:9px 12px;border-radius:6px;margin-bottom:10px;font-size:12.5px}
+.msg.warn{background:var(--warn-bg);border-left:3px solid var(--warn-line);color:var(--warn)}
+.msg.info{background:var(--info-bg);border-left:3px solid var(--accent);color:var(--info-ink)}
+.filebtn{position:relative;overflow:hidden;display:inline-block}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--tip-bg);color:var(--tip-ink);
+       padding:10px 18px;border-radius:7px;z-index:999;font-size:13px;max-width:700px;box-shadow:0 4px 14px var(--shadow-lg)}
+code{font-family:var(--mono);background:var(--field-bg);padding:1px 4px;border-radius:3px}
+.admin-only{display:none!important}
+body.admin .admin-only{display:inline-block!important}
+body.admin div.admin-only{display:block!important}
+
+/* ---------- printing ----------
+   Paper is always light, whatever the screen theme is. Re-declaring the light
+   tokens here means a dark-mode user still prints a legible black-on-white
+   sheet without having to flip the theme first.                             */
+@media print{
+  :root{
+    color-scheme:light;
+    --bg:#fff; --panel:#fff; --ink:#1a1d21; --muted:#6b7280; --line:#ccc;
+    --header-bg:#fff;
+    --accent:#1f5fa9; --accent-fill:#1f5fa9; --on-accent:#fff;
+    --good:#0f7b4f; --bad:#b3261e;
+    --warn:#8a6100; --warn-bg:#fff8e6; --warn-line:#d99a00; --warn-badge:#8a6100;
+    --err-bg:#fdecea; --err-ink:#7d1a15;
+    --ok-bg:#eaf6ef; --ok-ink:#0b5c3b;
+    --btn-bg:#fff; --field-bg:#fff;
+    --th-bg:#fafbfc; --row-hover:#f7f9fc; --cat-bg:#eef1f5;
+    --card-bg:#fff; --kpi-bg:#fff; --kpi-base-bg:#f8fbfe;
+    --info-bg:#fff; --info-line:#b3bac4; --info-ink:#41474f;
+    --shadow-sm:rgba(0,0,0,.04); --shadow-lg:rgba(0,0,0,.32);
+  }
+  header{position:static;box-shadow:none}
+  .noprint{display:none!important}
+  body{background:#fff}
+  .panel{break-inside:avoid}
+  .toast{display:none!important}
+  tr{break-inside:avoid}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @page{margin:12mm}
+}
+</style>
+<script>
+/* Paint the stored theme before the first frame. Dark needs no attribute — it
+   is what :root already declares — so only a saved "light" preference does
+   anything here. Kept inline in <head> on purpose: deferring it to the script
+   at the bottom of <body> would flash a dark page at light-mode users.
+
+   The key is shared with the comparator deliberately: a theme chosen in one
+   tool applies across the toolkit. The leaseComparator_ prefix is historical. */
+(function(){ try{ if(localStorage.getItem('leaseComparator_theme')==='light')
+  document.documentElement.setAttribute('data-theme','light'); }catch(e){} })();
+</script>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Site Rate Builder</h1>
+    <div class="sub">Audit-stage screening &mdash; is this lease out of line, and what should we ask for?</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="row noprint">
+    <span class="filebtn"><button>Open Deal File</button><input type="file" accept=".json" onchange="openDeal(this)"></span>
+    <button onclick="saveDeal()">Save Deal File</button>
+    <span class="filebtn"><button title="Replace the bundled illustrative rates with your own">Load Rate File</button><input type="file" accept=".json" onchange="loadRates(this)"></span>
+    <button class="admin-only" onclick="loadSample()">Load Example</button>
+    <button class="admin-only" id="themeBtn" onclick="toggleTheme()" title="Switch to light theme (this machine only)">Light Mode</button>
+    <button onclick="window.print()">Print</button>
+    <span class="badge admin-only" title="Ctrl+Shift+A to leave admin mode">admin</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="ratesBanner"></div>
+
+  <div class="msg info">
+    <b>This is a screening tool, not an appraisal.</b> The bands are assembled from published market
+    commentary and industry rules of thumb, and published ranges in this market disagree by roughly
+    2&times;. Use it to decide which leases deserve a closer look and where to open &mdash; not to
+    reprice a site on its own. It writes <code>marketBenchmark</code> and <code>equipment</code> into
+    the deal file; the comparator prices the scenario you build from it.
+  </div>
+
+  <div id="dealNote"></div>
+
+  <div class="panel">
+    <h2>Market</h2>
+    <div class="grid g4">
+      <div>
+        <label>Metro market</label>
+        <select id="metro" onchange="calc()"></select>
+      </div>
+      <div>
+        <label>Tier</label>
+        <input id="tierOut" readonly>
+      </div>
+      <div>
+        <label>Tier multiplier</label>
+        <input id="multOut" readonly>
+      </div>
+      <div>
+        <label>Base rent band position</label>
+        <select id="bandPos" onchange="calc()">
+          <option value="low">Recommended low</option>
+          <option value="mid" selected>Recommended mid</option>
+          <option value="high">Recommended high</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid g4" style="margin-top:10px">
+      <div>
+        <label>Structure type</label>
+        <select id="structure" onchange="calc()">
+          <option value="ground">Ground / tower</option>
+          <option value="rooftop">Rooftop / elevated structure</option>
+        </select>
+      </div>
+      <div>
+        <label>Base site rent ($/mo)</label>
+        <input id="baseRent" type="number" step="1" oninput="manualBase=true;calc()">
+      </div>
+      <div>
+        <label>Premises area (sq ft)</label>
+        <input id="spaceQty" type="number" step="1" value="0" oninput="calc()">
+      </div>
+      <div>
+        <label>Rent currently payable ($/mo)</label>
+        <input id="inPlace" type="number" step="0.01" oninput="calc()">
+      </div>
+    </div>
+    <p class="hint" id="bandHint"></p>
+  </div>
+
+  <div class="panel">
+    <h2>How this lease charges</h2>
+    <p class="hint" style="margin:0 0 12px">
+      The indicated rent has to be built on the <b>same basis the lease charges on</b>. Adding
+      equipment adders and a separate space charge to a flat-rent lease inflates the indicated
+      figure and can make an above-market lease look in band.
+    </p>
+    <div class="grid g2" style="max-width:760px">
+      <div>
+        <label>Charge basis</label>
+        <select id="chargeBasis" onchange="manualBase=false;calc()">
+          <option value="flat" selected>Flat rent &mdash; area describes the premises (most common)</option>
+          <option value="antenna_only">Rent plus per-antenna charges only</option>
+          <option value="antenna_and_microwave">Rent plus per-antenna and per-dish charges</option>
+          <option value="full_manifest">Full itemised equipment manifest (uncommon)</option>
+        </select>
+      </div>
+      <div id="spaceWrap">
+        <label>Space charged separately</label>
+        <select id="chargeSpace" onchange="calc()">
+          <option value="no" selected>No &mdash; rent covers the premises</option>
+          <option value="yes">Yes &mdash; the lease states a rate per unit of area</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid g2" style="max-width:760px;margin-top:10px">
+      <div id="spaceRateWrap">
+        <label>Space type</label>
+        <select id="spaceType" onchange="calc()"></select>
+      </div>
+      <div id="coveredWrap">
+        <label>Equipment already covered by base rent ($/mo)</label>
+        <input id="covered" type="number" step="1" value="0" oninput="calc()">
+      </div>
+    </div>
+    <div id="basisNote"></div>
+  </div>
+
+  <div class="panel" id="equipPanel">
+    <h2>Equipment charged under this lease</h2>
+    <p class="hint" style="margin:0 0 10px">
+      Counts come from the audit. Rates are the Tier&nbsp;2 baseline times this market's multiplier.
+    </p>
+    <table id="equip"><thead>
+      <tr><th>Item</th><th class="n">Units</th><th class="n">Tier 2</th><th class="n">Adjusted</th>
+          <th class="n">Monthly</th><th>Note</th></tr>
+    </thead><tbody></tbody></table>
+  </div>
+
+  <div class="panel">
+    <h2>Build-up</h2>
+    <table id="buildup" style="max-width:660px"></table>
+    <p class="hint" id="buildupHint"></p>
+  </div>
+
+  <div class="panel">
+    <h2>Result</h2>
+    <div class="cards" id="cards"></div>
+    <div id="verdict"></div>
+    <div id="proposalAssist"></div>
+  </div>
+
+  <div class="panel admin-only" id="derivationPanel">
+    <h2>Band derivation <span class="badge">admin</span></h2>
+    <p class="hint" style="margin:0 0 12px">
+      Where the recommended band comes from. Published ranges in this market disagree by roughly
+      2&times;, and not randomly: landlord-side consultancies that sell representation publish the
+      high ranges, while transaction-weighted sources publish materially lower ones. The workbook
+      therefore discounts the published band before recommending anything.
+    </p>
+    <table id="derivation" style="max-width:720px"></table>
+  </div>
+
+</div>
+
+<script src="src/market-derive.js"></script>
+<script src="market/market-data.js"></script>
+<script>
+/* =============================================================================
+   Site Rate Builder — audit-stage screening.
+
+   Deliberately NOT part of the comparator. This answers "is this lease out of
+   line, and what should we open at" — a question you ask BEFORE deciding what
+   to propose. The comparator prices scenarios you have already chosen.
+
+   It also avoids a specific trap: the comparator's effective monthly is a
+   PV-derived figure with a discount rate baked into it, while these bands are
+   nominal current dollars. Comparing the two produces a ratio that looks
+   meaningful and is not. Everything here compares against the rent CURRENTLY
+   PAYABLE, which is like-for-like.
+   ============================================================================= */
+let deal = null;          // loaded deal file, or null
+let manualBase = false;   // true once the user overrides the band figure
+
+/* `M` is DERIVED, never stored. The rate file carries published low and high
+   per metro and one baseline per item; the bands you see are computed from it
+   by src/market-derive.js. The bundled file is illustrative and deliberately
+   conservative — load your own to replace it. */
+let RATES = window.MARKET_RATES;
+let M = deriveMarket(RATES);
+const col = n => M.metroCols.indexOf(n);
+
+/* Swap in a user-supplied rate file. Same derivation, so a file behaves
+   identically however it arrived. */
+function loadRates(inp){
+  const f = inp.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const parsed = JSON.parse(r.result);
+      const v = validateMarket(parsed);
+      if(v.errors.length){
+        alert('That rate file has ' + v.errors.length + ' problem' + (v.errors.length>1?'s':'') +
+              ' and was not loaded:\n\n' + v.errors.slice(0,10).join('\n'));
+        inp.value=''; return;
+      }
+      RATES = parsed; M = deriveMarket(RATES);
+      buildFromRates();
+      renderRatesBanner(v.warnings);
+      toast('Loaded ' + (RATES.label || f.name) + ' — ' + M.metros.length + ' metros.');
+    }catch(e){ alert('Could not read that rate file: ' + e.message); }
+    inp.value='';
+  };
+  r.readAsText(f);
+}
+
+/* Says what data is in front of you and how old it is. A band with no
+   provenance on screen gets quoted as though it were a valuation. */
+function renderRatesBanner(warnings){
+  const el = document.getElementById('ratesBanner');
+  if(!el) return;
+  const age = M.ageMonths == null ? null : Math.round(M.ageMonths);
+  const stale = age != null && age > 18;
+  const illustrative = M.illustrative === true;
+  let h = `<div class="msg ${stale ? 'warn' : illustrative ? 'info' : 'ok'}">
+    <b>${esc(M.label || 'Market rates')}</b> &mdash; ${M.metros.length} metros, as of
+    ${esc(M.asOf || 'undated')}${age != null ? ' (' + age + ' months old)' : ''}.`;
+  if(illustrative) h += `<br><b>This is the bundled illustrative file.</b> ${esc(M.stanceNote || '')}`;
+  h += `</div>`;
+  if(stale) h += `<div class="msg warn">Older than 18 months. Market rents move, and a stale band is
+    a wrong answer that looks like a right one.</div>`;
+  (warnings || []).forEach(w => { h += `<div class="msg warn">${esc(w)}</div>`; });
+  el.innerHTML = h;
+}
+const fmt  = n => (n==null||isNaN(n)) ? '—' : n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0 = n => (n==null||isNaN(n)) ? '—' : n.toLocaleString('en-US',{maximumFractionDigits:0});
+const esc  = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num  = id => { const v = document.getElementById(id).value; return v===''?0:Number(v); };
+
+/* The dropdown is sorted for finding things; M.metros is in the workbook's tier
+   order. So options carry their ORIGINAL index as their value and nothing reads
+   selectedIndex — reordering the list would otherwise select a different market
+   than the one shown. */
+function metroRow(){
+  const v = document.getElementById('metro').value;
+  if(v==='') return null;                       // nothing chosen yet
+  const i = Number(v);
+  return isNaN(i) ? null : M.metros[i];
+}
+
+/* ---------- build the parts of the UI that come from the rate file ----------
+   A named function rather than an IIFE, because loading a different rate file
+   has to rebuild all of it. */
+function buildFromRates(){
+  /* Sorted A-Z for finding, not in the workbook's tier order. Forty entries is
+     well past the point where a reader scans; they look for a name.
+
+     The four Tier 4 rows are not markets at all — they are fallback categories
+     for anywhere unnamed — so they sit in their own group rather than being
+     salted alphabetically among real metros. */
+  const opt = i => {
+    const r = M.metros[i];
+    const shortTier = (r[col('tier')].match(/^Tier \S+/)||[''])[0];
+    return `<option value="${i}">${esc(r[col('metro')])} — ${esc(shortTier)}</option>`;
+  };
+  const idx = M.metros.map((_,i)=>i);
+  const isBand = i => M.metros[i][col('source')] === 'Benchmark band';
+  const byName = (a,b) => M.metros[a][col('metro')].localeCompare(M.metros[b][col('metro')]);
+  const named = idx.filter(i=>!isBand(i)).sort(byName);
+  const bands = idx.filter(isBand);          // kept in descending-size order
+  /* No default market. Whichever entry happened to sort first would otherwise be
+     silently in force, and someone could enter a rent and read a ratio against a
+     band for a city they have nothing to do with. The tool should be empty until
+     a market is chosen. */
+  document.getElementById('metro').innerHTML =
+    `<option value="" selected>— choose a market —</option>` +
+    `<optgroup label="Metro markets">${named.map(opt).join('')}</optgroup>` +
+    `<optgroup label="No named market — benchmark bands">${bands.map(opt).join('')}</optgroup>`;
+
+  document.getElementById('spaceType').innerHTML =
+    M.space.map(s=>`<option>${esc(s.type)}</option>`).join('');
+
+  let cat='', rows='';
+  M.equipment.forEach((e,i)=>{
+    if(e.category!==cat){ cat=e.category;
+      rows+=`<tr class="cat" data-catrow="${esc(cat)}"><td colspan="6">${esc(cat)}</td></tr>`; }
+    rows+=`<tr data-row="${i}" data-cat="${esc(e.category)}">
+      <td>${esc(e.item)}</td>
+      <td class="n"><input class="cnt" type="number" min="0" step="1" value="0" data-eq="${i}" oninput="calc()"></td>
+      <td class="n" id="b${i}">${fmt0(e.baseline)}</td>
+      <td class="n" id="a${i}">—</td>
+      <td class="n" id="t${i}">—</td>
+      <td class="hint" style="max-width:340px">${esc(e.note)}</td></tr>`;
+  });
+  document.querySelector('#equip tbody').innerHTML = rows;
+  renderRatesBanner([]);
+  calc();
+}
+buildFromRates();
+
+/* Which equipment categories a lease on this basis actually charges for.
+   A flat-rent lease charges for none of them — that is the whole point. */
+function chargedCategories(basis){
+  if(basis==='full_manifest') return null;                    // null = all
+  if(basis==='antenna_and_microwave') return ['Antennas','Microwave - by diameter'];
+  if(basis==='antenna_only') return ['Antennas'];
+  return [];                                                  // flat
+}
+
+/* Does this site type price like a rooftop rather than like ground?
+
+   The rate tables split on elevated structure space versus ground compound,
+   and the split is worth real money — rooftop equipment area runs about 1.8x
+   ground compound at every tier. `site.siteType` is free text on purpose, so
+   this reads what the structure IS. It only sets the dropdown's initial value;
+   the dropdown is visible and the human overrides it. */
+function isElevated(siteType){
+  return /roof|water\s*(tank|tower)|\btank\b|steeple|church|silo|billboard|stack|chimney|bridge|parking\s*structure/i
+           .test(String(siteType||''));
+}
+
+/* ---------- the build-up ---------- */
+function calc(){
+  const r = metroRow();
+  if(!r){ blankState(); return; }
+  const mult = r[col('multiplier')];
+  const rooftop = document.getElementById('structure').value === 'rooftop';
+  const pos = document.getElementById('bandPos').value;
+
+  document.getElementById('tierOut').value = r[col('tier')];
+  document.getElementById('multOut').value = mult.toFixed(2)+'x';
+
+  /* Rooftop carries its own mid figure, which already embeds a per-market
+     premium over ground. Low and high are only published for ground, so a
+     rooftop low/high is scaled by the same ratio rather than invented. */
+  const gLow=r[col('groundLow')], gMid=r[col('groundMid')], gHigh=r[col('groundHigh')], rMid=r[col('rooftopMid')];
+  const ratio = rooftop ? (rMid/gMid) : 1;
+  const band = { low:gLow*ratio, mid:gMid*ratio, high:gHigh*ratio };
+  const bandFigure = band[pos];
+
+  const baseEl = document.getElementById('baseRent');
+  if(!manualBase) baseEl.value = Math.round(bandFigure);
+  const base = num('baseRent');
+
+  document.getElementById('bandHint').innerHTML =
+    `${rooftop?'Rooftop':'Ground'} band for ${esc(r[col('metro')])}: `+
+    `<b>${fmt0(band.low)} / ${fmt0(band.mid)} / ${fmt0(band.high)}</b> (low / mid / high) &nbsp;·&nbsp; `+
+    `source: <b>${esc(r[col('source')])}</b>`+
+    (r[col('source')]==='By analogy'
+      ? ` &mdash; assigned from tier peers, <b>no published figure for this market</b>. Replace it as you gather comps.`
+      : '')+
+    (manualBase ? ` &nbsp;·&nbsp; <a href="#" onclick="manualBase=false;calc();return false;">reset to band</a>` : '');
+
+  /* ---- charge basis governs what the build-up is allowed to contain ----
+     Rows outside the charged categories are hidden rather than disabled: a
+     visible zero invites someone to fill it in, and on a flat-rent lease that
+     number has no business in the comparison. */
+  const basis = document.getElementById('chargeBasis').value;
+  const {cats, chargesEquip, chargesSpace} = applyBasisVisibility();
+
+  /* equipment — only what this lease actually charges for */
+  let equipTotal = 0;
+  const counts = [];
+  M.equipment.forEach((e,i)=>{
+    const cnt = Number(document.querySelector(`[data-eq="${i}"]`).value)||0;
+    const adj = e.baseline*mult, line = adj*cnt;
+    const counted = (cats===null || cats.includes(e.category));
+    if(counted) equipTotal += line;
+    document.getElementById('a'+i).textContent = fmt0(adj);
+    document.getElementById('t'+i).textContent = line ? fmt0(line) : '—';
+    if(cnt>0 && counted) counts.push({item:e.item, count:cnt});
+  });
+
+  /* space — only when the lease states a rate per unit of area */
+  const sp = M.space[document.getElementById('spaceType').selectedIndex] || M.space[0];
+  const spQty = num('spaceQty');
+  const spRate = sp.baseline*mult;
+  const spaceTotal = !chargesSpace ? 0
+      : (/flat/.test(sp.unit) ? (spQty>0 ? spRate : 0) : spRate*spQty);
+
+  const covered = chargesEquip ? num('covered') : 0;
+  const indicated = base + equipTotal + spaceTotal - covered;
+  const inPlace = num('inPlace');
+
+  let rows = `<tr><td>Base site rent <span class="hint">(band ${esc(pos)})</span></td><td class="n">${fmt(base)}</td></tr>`;
+  if(chargesEquip){
+    rows += `<tr><td>Equipment adders <span class="hint">(${cats===null?'all items':'antennas and dishes only'})</span></td><td class="n">${fmt(equipTotal)}</td></tr>`;
+    rows += `<tr><td>Less: equipment already covered by base rent</td><td class="n">(${fmt(covered)})</td></tr>`;
+  }
+  if(chargesSpace){
+    rows += `<tr><td>Space charge <span class="hint">(${esc(sp.unit)} @ ${fmt(spRate)})</span></td><td class="n">${fmt(spaceTotal)}</td></tr>`;
+  }
+  rows += `<tr class="total"><td>Indicated total monthly rent</td><td class="n">${fmt(indicated)}</td></tr>`;
+  document.getElementById('buildup').innerHTML = rows;
+
+  document.getElementById('buildupHint').innerHTML = chargesEquip
+    ? `Base site rent almost always includes a standard equipment load. Enter the adder value of that
+       included configuration, or the build-up double-counts it.`
+    : `On a flat-rent lease the indicated figure <b>is</b> the base site rent band. The band already
+       represents a working site &mdash; structure, compound and a normal equipment load &mdash; so
+       adding adders or a space charge on top would compare this lease against a number computed on a
+       basis it does not use.`;
+
+  basisNote(basis, chargesSpace, spQty);
+  render(indicated, inPlace, r, counts, sp, spQty, basis);
+  renderDerivation(r);
+}
+
+/* Nothing chosen yet. Everything downstream is market-specific, so show nothing
+   rather than a figure computed against an arbitrary band. */
+/* Which controls the charge basis exposes. Independent of the market, so it
+   applies in the empty state too — otherwise the space and covered-by-base
+   fields sit visible before a market is chosen and then vanish, which reads
+   like a bug. */
+function applyBasisVisibility(){
+  const cats = chargedCategories(document.getElementById('chargeBasis').value);
+  const chargesEquip = (cats===null || cats.length>0);
+  const chargesSpace = document.getElementById('chargeSpace').value === 'yes';
+  document.getElementById('equipPanel').style.display    = chargesEquip ? '' : 'none';
+  document.getElementById('coveredWrap').style.display   = chargesEquip ? '' : 'none';
+  document.getElementById('spaceRateWrap').style.display = chargesSpace ? '' : 'none';
+  document.querySelectorAll('#equip tbody tr[data-row]').forEach(tr=>{
+    tr.style.display = (cats===null || cats.includes(tr.dataset.cat)) ? '' : 'none';
+  });
+  document.querySelectorAll('#equip tbody tr[data-catrow]').forEach(tr=>{
+    tr.style.display = (cats===null || cats.includes(tr.dataset.catrow)) ? '' : 'none';
+  });
+  return {cats, chargesEquip, chargesSpace};
+}
+
+function blankState(){
+  manualBase = false;   /* or a hand-typed base would survive into the next market */
+  applyBasisVisibility();
+  ['tierOut','multOut','baseRent'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('bandHint').textContent='';
+  document.getElementById('buildup').innerHTML='';
+  document.getElementById('buildupHint').textContent='';
+  document.getElementById('basisNote').innerHTML='';
+  document.getElementById('derivation').innerHTML='';
+  document.getElementById('verdict').innerHTML='';
+  document.getElementById('proposalAssist').innerHTML='';
+  document.getElementById('equipPanel').style.display='none';
+  document.getElementById('cards').innerHTML =
+    `<div class="kpi big"><div class="lbl">Indicated market rent</div>
+       <div class="val">—</div><div class="note">choose a metro market to begin</div></div>`;
+  window.__result = null;
+}
+
+/* The charge basis is a negotiating fact, not just a UI mode. */
+function basisNote(basis, chargesSpace, spQty){
+  let m = '';
+  if(basis==='flat'){
+    m = `<div class="msg info"><b>Flat rent &mdash; the common case.</b> Square footage describes the
+         premises; it is not a rate driver. The comparison is contract rent against the base band,
+         and nothing else.<br><br>
+         If a landlord proposes per-unit or per-square-foot charges here, that is a
+         <b>structural change to how the lease charges</b>, not a rent increase &mdash; and every
+         future equipment addition would then carry a cost. Price the structure, not just the number.</div>`;
+  } else if(basis==='antenna_only'){
+    m = `<div class="msg info"><b>Rent plus per-antenna charges only.</b> Antennas are counted;
+         microwave dishes are <b>not</b>, because this lease does not charge for them.<br><br>
+         The two are priced separately and are nowhere near each other &mdash; a panel antenna is
+         about $90/month at the Tier 2 baseline, a 6ft dish is $800. Building this site on the
+         antenna-and-dish basis would add adders no landlord could invoice. If the schedule does
+         enumerate dishes, change the basis rather than leaving the counts at zero.</div>`;
+  } else if(basis==='antenna_and_microwave'){
+    m = `<div class="msg info"><b>Rent plus per-antenna and per-dish charges.</b> Only antennas and
+         microwave dishes are counted; radios, cable and ancillary items are not, because this lease
+         does not charge for them. Check the audit for what the schedule actually enumerates &mdash;
+         if it lists more than antennas and dishes, this is a full manifest; if it lists no dishes,
+         it is antenna-only and the dish adders should not be in the build-up.</div>`;
+  } else {
+    m = `<div class="msg warn"><b>Full itemised manifest &mdash; uncommon.</b> Typically a restrictive
+         tower-company licence. This is the case where an equipment audit pays for itself: every unit
+         is billable, so abandoned coax runs, obsolete TMAs and separately-billed RETs are recoverable
+         if they are no longer live. Confirm each count against a site visit before conceding it.</div>`;
+  }
+  if(!chargesSpace && spQty>0){
+    m += `<div class="msg info">Area is recorded but not charged, which is normal. It is carried into
+          the deal file for the premises description and for any expansion request later.</div>`;
+  }
+  document.getElementById('basisNote').innerHTML = m;
+}
+
+/* ---------- verdict and proposal assist ---------- */
+function render(indicated, inPlace, r, counts, sp, spQty, basis){
+  const ratio = (inPlace>0 && indicated>0) ? inPlace/indicated : null;
+  let flag='', cls='band', words='';
+  if(ratio!=null){
+    if(ratio > M.thresholds.above){ flag='ABOVE market'; cls='above'; }
+    else if(ratio < M.thresholds.below){ flag='BELOW market'; cls='below'; }
+    else { flag='In band'; cls='band'; }
+  }
+
+  document.getElementById('cards').innerHTML = `
+    <div class="kpi big"><div class="lbl">Indicated market rent</div>
+      <div class="val">${fmt0(indicated)}</div><div class="note">per month, nominal</div></div>
+    <div class="kpi"><div class="lbl">Rent currently payable</div>
+      <div class="val">${inPlace>0?fmt0(inPlace):'—'}</div><div class="note">per month</div></div>
+    <div class="kpi"><div class="lbl">Contract vs indicated</div>
+      <div class="val">${ratio!=null?ratio.toFixed(2)+'x':'—'}</div>
+      <div class="note">${ratio!=null?`<span class="flag ${cls}">${flag}</span>`:'enter the current rent'}</div></div>
+    <div class="kpi"><div class="lbl">Annual difference</div>
+      <div class="val ${ratio!=null&&inPlace>indicated?'':''}">${ratio!=null?fmt0((inPlace-indicated)*12):'—'}</div>
+      <div class="note">current minus indicated</div></div>`;
+
+  let v = '';
+  if(ratio!=null){
+    v += `<div class="msg ${cls==='above'?'warn':'info'}">`;
+    if(cls==='above'){
+      v += `<b>Above the band by ${((ratio-1)*100).toFixed(0)}%.</b> This is the reduction case. `+
+           `Expect most exceptions to sit here rather than below: an in-place lease with a 3% escalator `+
+           `has outrun both inflation and a flat-to-declining market.`;
+    } else if(cls==='below'){
+      v += `<b>Below the band.</b> There is no rent-reduction case here on these numbers. `+
+           `If this site is on the list, the opportunity is in terms &mdash; termination rights, access, `+
+           `assignment &mdash; not in rent.`;
+    } else {
+      v += `<b>Within the band.</b> The ${M.thresholds.below}&times;/${M.thresholds.above}&times; thresholds are `+
+           `deliberately wide; with site-level dispersion this large, anything tighter flags noise. `+
+           `A rent case here is weak, but a terms case may not be.`;
+    }
+    v += `</div>`;
+  }
+  document.getElementById('verdict').innerHTML = v;
+
+  /* Proposal assist — only where there is a case to make. */
+  let p = '';
+  if(ratio!=null && inPlace > indicated){
+    const targets = [
+      ['Indicated total', indicated],
+      ['Band mid',  Number(document.getElementById('baseRent').value)||indicated]
+    ];
+    p = `<h3 style="margin-top:16px">Opening positions</h3>
+      <table style="max-width:640px"><thead><tr>
+        <th>Target</th><th class="n">Monthly</th><th class="n">Monthly saving</th>
+        <th class="n">Annual saving</th><th class="n">vs current</th></tr></thead><tbody>` +
+      targets.map(([lbl,amt])=>`<tr>
+        <td>${esc(lbl)}</td>
+        <td class="n">${fmt(amt)}</td>
+        <td class="n">${fmt(inPlace-amt)}</td>
+        <td class="n">${fmt((inPlace-amt)*12)}</td>
+        <td class="n">${(amt/inPlace).toFixed(2)}x</td></tr>`).join('') +
+      `</tbody></table>
+      <p class="hint">Undiscounted. Take a target into the comparator to price it over the term with
+      escalation and proration &mdash; a lower starting rent with a steeper escalator can cost more
+      than it saves.</p>`;
+  }
+  document.getElementById('proposalAssist').innerHTML = p;
+
+  /* stash for saveDeal() */
+  window.__result = {
+    metro:r[col('metro')], tier:r[col('tier')], multiplier:r[col('multiplier')],
+    indicated:indicated, ratio:ratio, flag:flag, counts:counts,
+    spaceType:sp.type, spaceQty:spQty, source:r[col('source')], basis:basis
+  };
+}
+
+/* ---------- deal file I/O ---------- */
+function openDeal(inp){
+  const f = inp.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try{
+      const o = JSON.parse(rd.result);
+      if(!o.glob || !o.current) throw new Error('Not a deal file from this toolkit.');
+      deal = o;
+
+      /* Pull what the audit already knows so it is not retyped. */
+      if(o.current && o.current.baseRent!=='' && o.current.baseRent!=null){
+        const monthly = o.current.rentBasis==='annual' ? Number(o.current.baseRent)/12 : Number(o.current.baseRent);
+        document.getElementById('inPlace').value = monthly.toFixed(2);
+      }
+      if(o.site && o.site.sqft) document.getElementById('spaceQty').value = o.site.sqft;
+      /* Elevated structure prices like a rooftop, not like ground. A water tank
+         is what made this obvious: the test was /roof/ alone, so "water tank" —
+         a common municipal site — fell through to ground rates and understated
+         the indicated rent by the whole rooftop premium. siteType is free text
+         by design, so this matches on what the structure IS rather than
+         requiring a fixed vocabulary. */
+      if(o.site && isElevated(o.site.siteType)) document.getElementById('structure').value='rooftop';
+      if(o.rent && o.rent.chargeBasis) document.getElementById('chargeBasis').value = o.rent.chargeBasis;
+      if(o.marketBenchmark && o.marketBenchmark.metro){
+        const idx = M.metros.findIndex(r=>r[col('metro')]===o.marketBenchmark.metro);
+        if(idx>=0) document.getElementById('metro').value = String(idx);
+      }
+      if(Array.isArray(o.equipment)){
+        o.equipment.forEach(e=>{
+          const i = M.equipment.findIndex(x=>x.item===e.item);
+          if(i>=0) document.querySelector(`[data-eq="${i}"]`).value = e.count||0;
+        });
+      }
+      manualBase = false;
+      calc();
+
+      document.getElementById('dealNote').innerHTML =
+        `<div class="msg info"><b>Loaded:</b> ${esc((o.glob&&o.glob.projectName)||'(unnamed deal)')}`+
+        (o.confidential ? ` &nbsp;·&nbsp; <b>marked confidential</b> &mdash; do not save it into the repository` : '')+
+        `</div>`;
+      toast('Deal file loaded.');
+    }catch(e){ alert('Could not read that file: '+e.message); }
+    inp.value='';
+  };
+  rd.readAsText(f);
+}
+
+function saveDeal(){
+  const r = window.__result;
+  if(!r){ alert('Nothing to save yet.'); return; }
+  if(!deal){
+    alert('Open a deal file first. This tool writes the benchmark into an existing deal rather than '+
+          'creating one, so the audit and the pricing stay in the same file.');
+    return;
+  }
+  deal.marketBenchmark = {
+    metro: r.metro,
+    tier: r.tier,
+    tierMultiplier: r.multiplier,
+    indicatedMonthly: Math.round(r.indicated*100)/100,
+    contractVsIndicated: r.ratio==null ? '' : Math.round(r.ratio*100)/100,
+    flag: r.flag==='ABOVE market' ? 'above' : r.flag==='BELOW market' ? 'below' : r.flag==='In band' ? 'in_band' : '',
+    asOf: new Date().toISOString().slice(0,10)
+  };
+  /* The charge basis is an audit finding, so it belongs on the deal whether or
+     not any equipment was counted. */
+  deal.rent = deal.rent || {};
+  deal.rent.chargeBasis = r.basis;
+  /* Only write equipment where the lease actually charges for it. Recording a
+     manifest against a flat-rent lease would imply a charging structure that
+     does not exist, and the comparator would have no business pricing it. */
+  if(r.counts.length) deal.equipment = r.counts;
+  else if(r.basis === 'flat') delete deal.equipment;
+  if(!deal.stage || deal.stage==='audit') deal.stage = 'audit';
+
+  const name = ((deal.glob&&deal.glob.projectName)||'deal')
+      .replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase() || 'deal';
+  const blob = new Blob([JSON.stringify(deal,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name+'.deal.json';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},0);
+  toast('Benchmark written into the deal file.');
+}
+
+function toast(m){
+  const d = document.createElement('div'); d.className='toast'; d.textContent=m;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),3200);
+}
+
+/* ---------- admin mode ----------
+   Matches the comparator, and shares its localStorage key so the two tools are
+   in the same mode at the same time — flipping one and finding the other
+   unchanged would be worse than having no mode at all. The leaseComparator_
+   prefix is historical; it is now a toolkit-wide preference.
+
+   What is behind it here: the light/dark switch, the worked example, and the
+   band derivation. The example silently replaces whatever is on screen, and
+   the derivation is background rather than something a user needs mid-audit. */
+const AKEY='leaseComparator_adminMode';
+function setAdmin(on,announce){
+  document.body.classList.toggle('admin',!!on);
+  try{ on?localStorage.setItem(AKEY,'1'):localStorage.removeItem(AKEY); }catch(e){}
+  if(announce) toast(on
+    ? 'Admin mode on — Load Example, the light/dark switch and the band derivation are available. Ctrl+Shift+A turns it off.'
+    : 'Admin mode off — Load Example, the theme switch and the derivation hidden. The current theme stays as it is.');
+}
+function toggleAdmin(){ setAdmin(!document.body.classList.contains('admin'),true); }
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.shiftKey&&(e.key==='A'||e.key==='a')){ e.preventDefault(); toggleAdmin(); }
+});
+(function(){ let on=false;
+  try{ on=localStorage.getItem(AKEY)==='1'; }catch(e){}
+  if(/[?&]admin=1(&|$)/.test(location.search)) on=true;
+  if(on) document.body.classList.add('admin');
+})();
+
+/* ---------- theme (admin only) ----------
+   Dark is the product default. Light stays available but sits behind admin mode
+   rather than in the main toolbar, so the house style cannot be flipped by
+   accident mid-audit. Printing always forces light — see the @media print block
+   — so the theme never affects a paper copy.
+
+   Stored per machine, never in the deal file, so opening someone else's deal
+   does not drag their theme along with it. */
+const TKEY='leaseComparator_theme';
+function currentTheme(){ return document.documentElement.getAttribute('data-theme')==='light'?'light':'dark'; }
+function setTheme(t,announce){
+  const light=t==='light';
+  if(light) document.documentElement.setAttribute('data-theme','light');
+  else document.documentElement.removeAttribute('data-theme');
+  try{ localStorage.setItem(TKEY,light?'light':'dark'); }catch(e){}
+  const b=document.getElementById('themeBtn');
+  if(b){ b.textContent=light?'Dark Mode':'Light Mode';
+         b.title=light?'Switch back to the default dark theme':'Switch to light theme (this machine only)'; }
+  if(announce) toast(light
+    ? 'Light mode on — remembered on this machine only. The button switches back to dark.'
+    : 'Dark mode on — the default theme.');
+}
+function toggleTheme(){ setTheme(currentTheme()==='light'?'dark':'light',true); }
+setTheme(currentTheme(),false);   /* sync the button label with what <head> already painted */
+
+/* ---------- worked example (admin only) ----------
+   The workbook's own Site Rate Builder example. Loading it turns the manual
+   check documented in market/README.md into one click: if this stops producing
+   3,840.00 and 0.50x, the CSVs and the workbook have diverged. */
+function loadSample(){
+  if(!confirm('Load the workbook’s worked example? This replaces everything currently on screen.')) return;
+  const set = (id,v)=>{ document.getElementById(id).value = v; };
+  const iTier2 = M.metros.findIndex(r=>r[col('multiplier')]===1);
+  document.getElementById('metro').value = String(iTier2<0?0:iTier2);
+  set('structure','ground');
+  set('chargeBasis','full_manifest');
+  set('chargeSpace','yes');
+  const iSpace = M.space.findIndex(s=>/Ground compound - primary/.test(s.type));
+  document.getElementById('spaceType').selectedIndex = iSpace<0?0:iSpace;
+  set('spaceQty',400);
+  set('covered',1200);
+  set('inPlace',1926);
+  document.querySelectorAll('#equip tbody input.cnt').forEach(i=>i.value=0);
+  const counts = {
+    'Panel antenna - standard (<50 lb)':12,
+    'Remote radio unit (RRU / RRH)':12,
+    'Diplexer / combiner':3,
+    'GPS antenna':1,
+    'Hybrid fiber / DC trunk':2
+  };
+  Object.keys(counts).forEach(item=>{
+    const i = M.equipment.findIndex(e=>e.item===item);
+    if(i>=0) document.querySelector(`[data-eq="${i}"]`).value = counts[item];
+  });
+  manualBase = true;
+  set('baseRent',1500);
+  calc();
+  const got = window.__result ? window.__result.indicated : NaN;
+  toast(Math.abs(got-3840) < 0.005
+    ? 'Worked example loaded — indicated 3,840.00, matching the workbook.'
+    : 'Worked example loaded, but indicated came to '+fmt(got)+' rather than 3,840.00 — the CSVs and the workbook have diverged.');
+}
+
+/* ---------- band derivation (admin only) ---------- */
+function renderDerivation(r){
+  const c = {discountOnPublishedLow: M.derivation.lowFactor,
+             discountOnPublishedHigh: M.derivation.highFactor,
+             weightOnLowForMid: 1 - M.derivation.midPosition};
+  const recLow = r[col('groundLow')], recMid = r[col('groundMid')], recHigh = r[col('groundHigh')];
+  /* Read from the file rather than divided back out of the result. The rate
+     file carries the published figures, so nothing has to be reverse-engineered
+     from a number that was computed from them in the first place. */
+  const pubLow = r[col('publishedLow')], pubHigh = r[col('publishedHigh')];
+  document.getElementById('derivation').innerHTML = `
+    <tr><th>Step</th><th class="n">Value</th><th>Why</th></tr>
+    <tr><td>Published ground low</td><td class="n">${fmt0(pubLow)}</td>
+        <td class="hint">As sourced for ${esc(r[col('metro')])}.</td></tr>
+    <tr><td>Published ground high</td><td class="n">${fmt0(pubHigh)}</td>
+        <td class="hint">As sourced. This is where lead-generation bias concentrates.</td></tr>
+    <tr><td>&times; ${c.discountOnPublishedLow} on the low end</td><td class="n">${fmt0(recLow)}</td>
+        <td class="hint">Low ends sit closer to real transactions, so they are barely discounted.</td></tr>
+    <tr><td>&times; ${c.discountOnPublishedHigh} on the high end</td><td class="n">${fmt0(recHigh)}</td>
+        <td class="hint">A judgement call. Move it in the workbook if your own comps disagree.</td></tr>
+    <tr class="total"><td>Recommended mid <span class="hint">(${c.weightOnLowForMid} weight on low)</span></td>
+        <td class="n">${fmt0(recMid)}</td>
+        <td class="hint">Above 0.5, so the mid sits below the band midpoint &mdash; matching a flat-to-declining market.</td></tr>
+    <tr><td>Source</td><td class="n">&mdash;</td>
+        <td class="hint">${esc(r[col('source')])}${r[col('source')]==='By analogy'
+          ? ' &mdash; assigned from tier peers, no published figure for this market.' : ''}</td></tr>`;
+}
+</script>
+</body>
+</html>

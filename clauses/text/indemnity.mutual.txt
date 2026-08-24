@@ -1,0 +1,9 @@
+Section {{sectionMap.indemnity}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+INDEMNIFICATION.
+
+(a) {{TenantTitle}} will indemnify, defend and hold harmless {{LandlordTitle}} from and against any claim, loss, damage, liability or expense, including reasonable attorneys' fees, arising out of the installation, use, maintenance, repair or removal of {{TenantTitle}}'s equipment on the {{AreaName}}, except to the extent caused by the negligence or willful misconduct of {{LandlordTitle}} or its agents, employees or contractors.
+
+(b) {{LandlordTitle}} will indemnify, defend and hold harmless {{TenantTitle}} from and against any claim, loss, damage, liability or expense, including reasonable attorneys' fees, arising out of the acts or omissions of {{LandlordTitle}} or its agents, employees, contractors or other tenants, except to the extent caused by the negligence or willful misconduct of {{TenantTitle}}.
+
+(c) Neither party will be liable to the other for any indirect, incidental, consequential, special or punitive damages, including lost profits, arising out of or related to the Agreement, regardless of the theory of liability.

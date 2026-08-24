@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+ENVIRONMENTAL — {{LandlordTitle}}. {{LandlordTitle}} represents that, to its knowledge, the {{PropertyName}} is free of hazardous substances as of the date of this Amendment and is not, and has not been, subject to any environmental enforcement action or the subject of any notice of violation under applicable environmental law.
+
+{{LandlordTitle}} will indemnify, defend and hold harmless {{TenantTitle}} from and against any claim, loss, damage, liability, cost or expense, including reasonable attorneys' fees and remediation costs, arising from any hazardous substance on the {{PropertyName}} not introduced by {{TenantTitle}}, including any condition existing as of the date of this Amendment.
+
+{{TenantTitle}} may terminate the Agreement upon written notice, without penalty or further liability, if it determines that the presence of a hazardous substance not introduced by {{TenantTitle}} renders the {{AreaName}} unsuitable for its Permitted Use or exposes {{TenantTitle}} to liability under environmental law.

@@ -1,0 +1,9 @@
+Section {{sectionMap.notices}} of the Agreement is hereby amended as follows:
+
+All notices, requests, demands and other communications shall be in writing and shall be sent by certified or registered mail, return receipt requested, or by nationally recognised overnight courier, to the parties at the addresses stated below, and shall be effective when properly sent and received, refused or returned undelivered.
+
+If to {{LandlordTitle}}: {{Landlord_Name}}, {{Landlord_Address}}.
+
+If to {{TenantTitle}}: {{Tenant_Notice_Entity}}, {{Tenant_Notice_Address}}, referencing Site {{SiteName}} and Fixed Asset Number {{FAN}}.
+
+Either party may change its address for notice by giving thirty (30) days prior written notice to the other in accordance with this paragraph.

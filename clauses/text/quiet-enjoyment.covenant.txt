@@ -1,0 +1,3 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+QUIET ENJOYMENT. {{LandlordTitle}} covenants that {{TenantTitle}}, on paying the {{RentName}} and performing the covenants of the Agreement, will peaceably and quietly have, hold and enjoy the {{AreaName}} for the {{TermName}}, free from interruption or disturbance by {{LandlordTitle}} or any person claiming by, through or under {{LandlordTitle}}.

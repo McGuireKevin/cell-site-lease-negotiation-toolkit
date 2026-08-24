@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+ROOF PENETRATIONS AND WARRANTY. Where a roof penetration is required, {{LandlordTitle}} will identify its roofing contractor of record and, if a roof warranty is then in effect, the warranty issuer. All penetrations and all flashing, sealing and patching will be performed by that contractor, or by another contractor approved in writing by the warranty issuer, at {{TenantTitle}}'s cost, so that any applicable roof warranty remains in full force and effect.
+
+{{LandlordTitle}} will provide {{TenantTitle}} with a copy of any applicable roof warranty and of any conditions the warranty imposes on rooftop equipment, upon written request.
+
+Provided the foregoing is followed, {{TenantTitle}} will have no liability for the voiding of any roof warranty or for any roof leak, except a leak arising directly from {{TenantTitle}}'s negligence or from work performed by a contractor engaged by {{TenantTitle}} without {{LandlordTitle}}'s approval.

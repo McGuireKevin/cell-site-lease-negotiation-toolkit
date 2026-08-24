@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+LIENS. {{TenantTitle}} will not permit any mechanics or materialmens lien arising from work performed by or for {{TenantTitle}} to remain against the {{PropertyName}}, and will discharge or bond over any such lien within sixty (60) days of receiving written notice of it.
+
+{{LandlordTitle}} waives any lien, statutory or otherwise, and any right of distraint or levy, that it may have against the {{EquipmentName}} or any other property owned by {{TenantTitle}}. All such property remains {{TenantTitle}}'s personal property regardless of the manner of its attachment, does not become a fixture or part of the realty, and may be removed by {{TenantTitle}} or its lender at any time.
+
+{{LandlordTitle}} will execute a commercially reasonable waiver confirming the foregoing upon written request from {{TenantTitle}} or any lender of {{TenantTitle}}.

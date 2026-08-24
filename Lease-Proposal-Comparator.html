@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lease Proposal Comparator</title>
+<style>
+/* ---------- theme tokens ----------
+   DARK IS THE DEFAULT. Light mode is opt-in via <html data-theme="light">,
+   toggled from the admin toolbar (Ctrl+Shift+A) and remembered per machine.
+   Every colour below is a token — no raw hex should appear in the rules that
+   follow, otherwise it will not flip with the theme.                        */
+:root{
+  color-scheme:dark;
+  --bg:#14171a; --panel:#1c2024; --ink:#e7eaef; --muted:#9aa3b0; --line:#2e343b;
+  --header-bg:#191d21;
+  --accent:#6aa8f0;          /* text, borders, focus */
+  --accent-fill:#2f6fc4;     /* filled surfaces that carry --on-accent text */
+  --accent-hover:#3f83d8; --accent-soft:#1d3a5c; --on-accent:#fff;
+  --good:#4ec98a; --bad:#f2837a;
+  --warn:#e8bd6a; --warn-bg:#332913; --warn-line:#a67c2a; --warn-badge:#8a6100;
+  --err-bg:#3a1f1d; --err-ink:#f3a9a2;
+  --ok-bg:#15301f; --ok-ink:#7fd9a8;
+  --interim:#241f33; --interim-line:#ab9cf0; --interim-fill:#5f51a8; --interim-hover:#2c2640;
+  --btn-bg:#252a30; --btn-hover:#2e343b; --btn-hover-line:#454d57;
+  --danger-line:#5c2f2b; --danger-hover:#3a1f1d;
+  --field-bg:#22272c; --field-disabled-bg:#1a1e22; --field-disabled-ink:#636c77;
+  --th-bg:#22272c; --row-hover:#242a30;
+  --card-bg:#1f242a; --card-line:#4a525c; --grey:#4d5761;
+  --kpi-bg:#1f242a; --kpi-base-bg:#1a2632;
+  --info-bg:#22272c; --info-line:#4a525c;
+  --tip-bg:#2b3138; --tip-ink:#eef1f5; --tip-b:#8fc0f0;
+  --gap:#39414a; --gap-ink:#c3cad3;
+  --shadow-sm:rgba(0,0,0,.45); --shadow-lg:rgba(0,0,0,.55);
+  --print-line:#ccc;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f4f5f7; --panel:#fff; --ink:#1a1d21; --muted:#6b7280; --line:#dfe3e8;
+  --header-bg:#fff;
+  --accent:#1f5fa9; --accent-fill:#1f5fa9; --accent-hover:#194e8c; --accent-soft:#e8f0fa; --on-accent:#fff;
+  --good:#0f7b4f; --bad:#b3261e;
+  --warn:#8a6100; --warn-bg:#fff8e6; --warn-line:#d99a00; --warn-badge:#8a6100;
+  --err-bg:#fdecea; --err-ink:#7d1a15;
+  --ok-bg:#eaf6ef; --ok-ink:#0b5c3b;
+  --interim:#f3f0fa; --interim-line:#8b7cc4; --interim-fill:#8b7cc4; --interim-hover:#ece7f6;
+  --btn-bg:#fff; --btn-hover:#f0f2f5; --btn-hover-line:#c4cad2;
+  --danger-line:#e8c4c1; --danger-hover:#fdecea;
+  --field-bg:#fff; --field-disabled-bg:#f2f3f5; --field-disabled-ink:#6f7681;
+  --th-bg:#fafbfc; --row-hover:#f7f9fc;
+  --card-bg:#fcfcfd; --card-line:#8b93a0; --grey:#8b93a0;
+  --kpi-bg:#fff; --kpi-base-bg:#f8fbfe;
+  --info-bg:#fff; --info-line:#b3bac4;
+  --tip-bg:#1a1d21; --tip-ink:#f2f4f7; --tip-b:#8fc0f0;
+  --gap:#c8ccd2; --gap-ink:#555;
+  --shadow-sm:rgba(0,0,0,.04); --shadow-lg:rgba(0,0,0,.32);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+h1{font-size:19px;margin:0;font-weight:650}
+h2{font-size:15px;margin:0 0 12px;font-weight:650}
+h3{font-size:12px;margin:0 0 8px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+header{background:var(--header-bg);border-bottom:1px solid var(--line);padding:12px 20px;position:sticky;top:0;z-index:50;
+  display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 3px var(--shadow-sm)}
+header .sub{color:var(--muted);font-size:12px}
+/* Identity of the negotiation, not an analysis parameter — so it sits in the
+   header beside the title rather than in Analysis Settings, and it prints. */
+.namefield{min-width:230px;max-width:330px;flex:0 1 auto}
+.namefield input{font-weight:650}
+.spacer{flex:1}
+.wrap{max-width:1500px;margin:0 auto;padding:18px 20px 80px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.panel.cur{border-left:4px solid var(--accent)}
+button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:var(--btn-bg);border-radius:6px;cursor:pointer;color:var(--ink)}
+button:hover{background:var(--btn-hover);border-color:var(--btn-hover-line)}
+button.primary{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill);font-weight:600}
+button.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+button.sm{padding:3px 8px;font-size:12px}
+button.danger{color:var(--bad);border-color:var(--danger-line)}
+button.danger:hover{background:var(--danger-hover);border-color:var(--danger-line)}
+label{display:block;font-size:10.5px;color:var(--muted);margin-bottom:3px;font-weight:650;letter-spacing:.03em;text-transform:uppercase}
+input,select{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:5px;width:100%;background:var(--field-bg);color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+input[type=number]{font-family:var(--mono)}
+input:disabled,select:disabled{background:var(--field-disabled-bg);color:var(--field-disabled-ink)}
+.grid{display:grid;gap:10px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}.g6{grid-template-columns:repeat(6,1fr)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;
+   background:var(--th-bg);position:sticky;top:0;z-index:1}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tbody tr:hover{background:var(--row-hover)}
+tr.interim td{background:var(--interim)}
+tr.interim:hover td{background:var(--interim-hover)}
+tr.total td{font-weight:700;background:var(--row-hover)}
+.prop-card{border:1px solid var(--line);border-left:4px solid var(--card-line);border-radius:8px;padding:14px;margin-bottom:12px;background:var(--card-bg)}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;
+  background:var(--accent-fill);color:var(--on-accent);letter-spacing:.05em;text-transform:uppercase}
+.badge.grey{background:var(--grey)}
+.badge.warn{background:var(--warn-badge)}
+.badge.interim{background:var(--interim-fill)}
+.sub-list{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+.sub-row{display:grid;gap:6px;align-items:end;margin-bottom:6px;
+  grid-template-columns:1.1fr 1.1fr 1fr .8fr .85fr 1.1fr 1.1fr .7fr .7fr 30px}
+.ot-row{display:grid;gap:6px;align-items:end;margin-bottom:6px;grid-template-columns:1.6fr 1fr 1fr 1.2fr 30px}
+/* A disabled escalator row still shows its values — they are kept, just unread —
+   so it needs to read as switched off at a glance rather than merely uneditable.
+   The Type selector stays at full strength since it is the way back. */
+/* Opacity multiplies with the disabled-field colour, so it cannot go far before
+   the retained dates and rate become unreadable — and the whole point of
+   disabling rather than deleting is that you keep those values. .72 reads as
+   off without erasing them. */
+.sub-row.off{opacity:.72}
+.sub-row.off select[data-f="type"]{opacity:1;border-color:var(--warn-line)}
+.msg{padding:8px 11px;border-radius:6px;margin-bottom:6px;font-size:13px}
+.msg.err{background:var(--err-bg);border-left:3px solid var(--bad);color:var(--err-ink)}
+.msg.warn{background:var(--warn-bg);border-left:3px solid var(--warn-line);color:var(--warn)}
+.msg.ok{background:var(--ok-bg);border-left:3px solid var(--good);color:var(--ok-ink)}
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.tab{padding:7px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;
+  font-size:13px;font-weight:600;color:var(--muted);user-select:none}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));margin-bottom:16px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:13px;background:var(--kpi-bg)}
+.kpi.base{border-color:var(--accent);background:var(--kpi-base-bg)}
+.kpi .lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:5px}
+.kpi .val{font-size:22px;font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.kpi .note{font-size:11px;color:var(--muted);margin-top:4px}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+/* Sits directly under the payment-anchor input inside a form grid, so it needs
+   to be tighter than a standalone hint or it pushes the row out of alignment. */
+.anchor-hint{font-size:10.5px;line-height:1.35;margin:4px 0 0}
+.assume{background:var(--warn-bg);border-left:3px solid var(--warn-line);padding:2px 6px;border-radius:3px;font-size:11px;color:var(--warn);font-weight:600}
+.filebtn{position:relative;overflow:hidden;display:inline-block}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.legend{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.6}
+.inherit{font-size:11px;color:var(--interim-line);font-weight:650}
+.timeline{display:flex;height:26px;border-radius:5px;overflow:hidden;margin:8px 0 4px;border:1px solid var(--line);font-size:10.5px}
+/* min-width:0 lets a narrow segment actually shrink instead of forcing its
+   text to overflow and get sliced mid-character. The label lives in its own
+   span so text-overflow can apply — it does nothing on a flex container. */
+.timeline>div{display:flex;align-items:center;justify-content:center;color:var(--on-accent);
+  font-weight:650;overflow:hidden;white-space:nowrap;min-width:0;cursor:default}
+.tl-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;padding:0 6px}
+.tl-interim{background:var(--interim-fill)}
+.tl-new{background:var(--accent-fill)}
+.tl-gap{background:var(--gap);color:var(--gap-ink)!important}
+/* Spelled-out fallback beneath the bar. The bar is a proportion picture; this
+   is the part that has to stay readable when a segment is only a few pixels
+   wide, so it is always present rather than conditional. */
+.tl-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11px;color:var(--muted);margin:0 0 2px}
+.tl-key span{display:inline-flex;align-items:center;gap:5px}
+.tl-key i{width:9px;height:9px;border-radius:2px;flex:none;display:inline-block}
+.tl-key .k-interim{background:var(--interim-fill)}
+.tl-key .k-new{background:var(--accent-fill)}
+.scroll{max-height:460px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+.info{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;flex:none;
+  border-radius:50%;border:1px solid var(--info-line);color:var(--muted);background:var(--info-bg);
+  font:italic 700 9px/1 Georgia,"Times New Roman",serif;text-transform:none;letter-spacing:0;
+  cursor:help;margin-left:4px;vertical-align:middle;user-select:none}
+.info:hover,.info:focus{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-accent);outline:none}
+.tipbox{position:fixed;display:none;max-width:340px;background:var(--tip-bg);color:var(--tip-ink);
+  padding:9px 12px;border-radius:6px;font:400 11.5px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  text-transform:none;letter-spacing:0;text-align:left;z-index:900;pointer-events:none;
+  box-shadow:0 6px 20px var(--shadow-lg)}
+.tipbox b{color:var(--tip-b);font-weight:650}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--tip-bg);color:var(--tip-ink);
+  padding:10px 18px;border-radius:7px;z-index:999;font-size:13px;max-width:700px;box-shadow:0 4px 14px var(--shadow-lg)}
+.admin-only{display:none!important}
+body.admin .admin-only{display:inline-block!important}
+
+/* ---------- printing ----------
+   Paper is always light, whatever the screen theme is. Re-declaring the light
+   tokens here means a dark-mode user still prints a legible black-on-white
+   sheet without having to flip the theme first.                             */
+@media print{
+  :root{
+    color-scheme:light;
+    --bg:#fff; --panel:#fff; --ink:#1a1d21; --muted:#6b7280; --line:#ccc;
+    --header-bg:#fff;
+    --accent:#1f5fa9; --accent-fill:#1f5fa9; --accent-hover:#194e8c; --accent-soft:#e8f0fa; --on-accent:#fff;
+    --good:#0f7b4f; --bad:#b3261e;
+    --warn:#8a6100; --warn-bg:#fff8e6; --warn-line:#d99a00; --warn-badge:#8a6100;
+    --err-bg:#fdecea; --err-ink:#7d1a15;
+    --ok-bg:#eaf6ef; --ok-ink:#0b5c3b;
+    --interim:#f3f0fa; --interim-line:#8b7cc4; --interim-fill:#8b7cc4; --interim-hover:#ece7f6;
+    --btn-bg:#fff; --btn-hover:#f0f2f5; --btn-hover-line:#c4cad2;
+    --danger-line:#e8c4c1; --danger-hover:#fdecea;
+    --field-bg:#fff; --field-disabled-bg:#f2f3f5; --field-disabled-ink:#9aa1ab;
+    --th-bg:#fafbfc; --row-hover:#f7f9fc;
+    --card-bg:#fff; --card-line:#8b93a0; --grey:#8b93a0;
+    --kpi-bg:#fff; --kpi-base-bg:#f8fbfe;
+    --info-bg:#fff; --info-line:#b3bac4;
+    --tip-bg:#1a1d21; --tip-ink:#f2f4f7; --tip-b:#8fc0f0;
+    --gap:#c8ccd2; --gap-ink:#555;
+    --shadow-sm:rgba(0,0,0,.04); --shadow-lg:rgba(0,0,0,.32);
+  }
+  header{position:static;box-shadow:none} .noprint{display:none!important}
+  /* The site name is identity, so it prints — but as a heading, not as an empty
+     form control with a box around it. */
+  .namefield input{border:none;background:transparent;padding-left:0;font-size:15px}
+  .namefield{max-width:none}
+  body{background:#fff} .panel{break-inside:avoid;border-color:var(--line)}
+  .scroll{max-height:none!important;overflow:visible!important}
+  .info{display:none!important} .tipbox{display:none!important} .toast{display:none!important}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+
+  /* ---- fitting wide tables to the sheet ----
+     Cells are nowrap on screen so columns stay scannable inside the horizontal
+     scroller. Paper has no scroller: a table wider than the page is simply cut
+     off at the margin, silently losing the right-hand columns. So on print,
+     let text wrap and shrink the type.
+
+     The critical part is that long headers wrap. Numeric headers carry
+     class="n" and were caught by the same nowrap rule as the figures beneath
+     them, which is what pushed the Breakeven table off the page — a heading
+     like "Equalizing lump sum at effective date" cannot fit on one line at any
+     sensible size. Data cells keep nowrap so a figure never breaks
+     mid-number.                                                              */
+  /* Landscape, deliberately. The Summary comparison table carries a column per
+     scenario plus PV, nominal and delta columns, and its currency cells cannot
+     wrap without breaking a figure mid-number. That is roughly 970px of hard
+     minimum against ~734px of printable portrait width, and it grows with
+     every proposal added — portrait cannot hold it at any font size worth
+     reading. Landscape gives ~1030px, which fits with headroom. */
+  @page{size:landscape;margin:11mm}
+  .wrap{max-width:none;padding:0}
+  table{font-size:9.5px;table-layout:auto}
+  /* break-word, NOT anywhere. "anywhere" lets the browser break inside a word
+     when it computes the minimum column width, so it squeezes columns to the
+     narrowest possible and splits headings mid-word — "SCENARI/O",
+     "TREATMEN/T". "break-word" keeps whole words in that calculation and only
+     splits a word that genuinely cannot fit its own line, so headings wrap at
+     spaces the way they read. */
+  th,td{white-space:normal;overflow-wrap:break-word;padding:4px 6px}
+  th{letter-spacing:.02em}
+  td.n{white-space:nowrap}
+  th{background:var(--th-bg)!important}
+  thead{display:table-header-group}          /* repeat headers across pages */
+  tr{break-inside:avoid}
+  .legend,.hint{font-size:9.5px}
+}
+</style>
+<script>
+/* Paint the stored theme before the first frame. Dark needs no attribute — it
+   is what :root already declares — so only a saved "light" preference does
+   anything here. Kept inline in <head> on purpose: deferring it to the main
+   script at the bottom of <body> would flash a dark page at light-mode users. */
+(function(){ try{ if(localStorage.getItem('leaseComparator_theme')==='light')
+  document.documentElement.setAttribute('data-theme','light'); }catch(e){} })();
+</script>
+</head>
+<body>
+
+<header>
+  <div><h1>Lease Proposal Comparator</h1>
+  <div class="sub">Amendments to a lease in force &middot; interim terms continue until each proposal&rsquo;s effective date &middot; hover any <span class="info" style="cursor:default">i</span> for guidance</div></div>
+  <div class="namefield">
+    <label>Negotiation / site name <span class="info" tabindex="0" role="button" aria-label="Explain this field" data-tipkey="projectName">i</span></label>
+    <input type="text" data-g="projectName" maxlength="120" placeholder="e.g. Ridgeview Tower &mdash; Site 4412">
+  </div>
+  <div class="spacer"></div>
+  <div class="row noprint">
+    <button onclick="saveProject()">Save Project</button>
+    <span class="filebtn"><button>Open Project</button><input type="file" accept=".json" onchange="openProject(this)"></span>
+    <button class="admin-only" onclick="saveDefaults()">Save as Defaults</button>
+    <button class="admin-only" onclick="applyDefaults(true)">Load Defaults</button>
+    <button class="admin-only" onclick="loadSample()">Load Example</button>
+    <button class="admin-only" id="themeBtn" onclick="toggleTheme()" title="Switch to light theme (this machine only)">Light Mode</button>
+    <button class="danger" onclick="resetAll()">Reset</button>
+    <button class="primary" onclick="calc()">Recalculate</button>
+    <span class="badge warn admin-only" title="Ctrl+Shift+A to leave admin mode">admin</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+<div class="panel">
+  <h2>Analysis Settings <span class="badge grey">shared by every scenario</span></h2>
+  <div class="grid g5">
+    <div><label>Window start <span class="info" tabindex="0" role="button" aria-label="Explain this field" data-tipkey="windowStart">i</span></label><input type="date" data-g="windowStart"></div>
+    <div><label>Window end <span class="info" tabindex="0" role="button" aria-label="Explain this field" data-tipkey="windowEnd">i</span></label><input type="date" data-g="windowEnd"></div>
+    <div><label>PV reference date <span class="info" tabindex="0" role="button" aria-label="Explain this field" data-tipkey="pvReferenceDate">i</span></label><input type="date" data-g="pvReferenceDate"></div>
+    <div><label>Discount rate (annual %) <span class="info" tabindex="0" role="button" aria-label="Explain this field" data-tipkey="discountRatePct">i</span></label><input type="number" step="0.01" data-g="discountRatePct"></div>
+    <div><label>Assumed CPI (annual %) <span class="assume">assumption</span> <span class="info" tabindex="0" role="button" aria-label="Explain this field" data-tipkey="assumedCpiPct">i</span></label><input type="number" step="0.01" data-g="assumedCpiPct"></div>
+  </div>
+  <div class="grid g3" style="margin-top:10px">
+    <div><label>Baseline: current lease past its expiry <span class="info" tabindex="0" role="button" aria-label="Explain this field" data-tipkey="baselineMode">i</span></label><select data-g="baselineMode">
+      <option value="continue">Terms continue to the window end (default)</option>
+      <option value="expire">Obligation ends at expiry</option></select></div>
+    <div style="align-self:end"><button class="sm noprint" onclick="matchHorizon()">Set window end to longest proposal</button></div>
+    <div></div>
+  </div>
+  <p class="hint" id="baselineNote"></p>
+</div>
+
+<div class="panel cur">
+  <h2>Current Lease <span class="badge">in force</span></h2>
+  <p class="hint" style="margin-top:-6px;margin-bottom:12px">Assumed to be <b>in force at the analysis window start</b> &mdash; enter the rent actually payable on that date, not the original commencement rent. These terms continue to govern under every proposal until that proposal&rsquo;s effective date.</p>
+  <div id="currentLease"></div>
+</div>
+
+<div class="panel">
+  <div class="row" style="margin-bottom:12px">
+    <h2 style="margin:0">Proposals</h2><div class="spacer"></div>
+    <div class="row noprint">
+      <button class="sm" onclick="addProposal()">+ Add Proposal</button>
+    </div>
+  </div>
+  <div id="proposals"></div>
+</div>
+
+<div class="panel"><h2>Validation</h2><div id="validation"></div></div>
+
+<div class="panel">
+  <div class="row" style="margin-bottom:10px">
+    <h2 style="margin:0">Results</h2><div class="spacer"></div>
+    <div class="row noprint">
+      <button class="sm" onclick="exportCSV('summary')">Summary CSV</button>
+      <button class="sm" onclick="exportCSV('annual')">Annual CSV</button>
+      <button class="sm" onclick="exportCSV('schedule')">Payment Schedule CSV</button>
+      <button class="sm" onclick="exportCSV('segments')">Segment Detail CSV</button>
+      <button class="sm" onclick="copyTSV()">Copy Schedule (TSV)</button>
+      <button class="sm" onclick="window.print()">Print / PDF</button>
+    </div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div id="results"></div>
+</div>
+
+</div>
+
+<!-- The calculation engine — date helpers, escalation, proration, payment
+     periods and present value. It lives in its own file so test/tests.html can
+     exercise exactly the code this tool runs, rather than a copy of it.
+
+     Classic script, deliberately: type="module" is blocked over file://, and
+     this tool has to open straight from disk with no server and no build step. -->
+<script src="src/lease-engine.js"></script>
+<script src="src/lease-validate.js"></script>
+<script>
+
+/* ==========================================================================
+   STATE
+   ========================================================================== */
+const DKEY='leaseComparator_v2_defaults';
+let state=null,results=[],activeTab='summary';
+/* Notes raised while LOADING a file, as opposed to those raised by the current
+   values. They survive until the next load so they cannot scroll away
+   unnoticed, and they read differently — "this file said X" rather than
+   "this input is X". */
+let loadWarnings=[];
+
+function blankLease(){ return {termEnd:'',finalTermEnd:'',baseRent:'',rentBasis:'monthly',
+  cadenceMonths:1,firstPaymentDate:'',paymentTiming:'advance',prorationBasis:'prorated',
+  prorationConvention:'actual_month',paymentDayRule:'anchored',escalators:[],oneTimePayments:[]}; }
+function blankProposal(n,cur){ return {id:'p'+Math.random().toString(36).slice(2,8),label:'Proposal '+n,
+  effectiveDate:'',rentMode:'absolute',rentValue:'',rentBasis:'monthly',
+  termEnd:cur?cur.termEnd:'',
+  cadenceMonths:cur?cur.cadenceMonths:1,firstPaymentDate:'',paymentTiming:cur?cur.paymentTiming:'advance',
+  prorationBasis:cur?cur.prorationBasis:'prorated',prorationConvention:cur?cur.prorationConvention:'actual_month',
+  paymentDayRule:cur?(cur.paymentDayRule||'anchored'):'anchored',
+  escalators:[],oneTimePayments:[]}; }
+function blankEsc(){ return {appliesFrom:'',appliesTo:'',type:'fixed_pct',ratePct:3,cadenceMonths:12,
+  firstAdjustment:'',compounding:'on_prior',floorPctIn:'',capPctIn:''}; }
+function blankOT(){ return {label:'',date:'',amount:'',direction:'to_landlord'}; }
+/* Shipped defaults. 6.5% is an incremental-borrowing-rate view of a rent
+   obligation (IG corporate paper yields ~5.2-5.4%, tower/carrier WACCs sit
+   ~6.3-6.8%), not a buy-side hurdle — lease-buyout firms price at 8-14%, which
+   under-weights distant rent and quietly flatters back-loaded escalators.
+   3% CPI is a planning assumption, not a forecast; anything resting on it is
+   flagged and rerun in the Sensitivity tab. Both are starting points — replace
+   them with a treasury-mandated rate where one exists.                       */
+function freshState(){ const c=blankLease();
+  return {schemaVersion:SCHEMA_VERSION,
+          glob:{projectName:'',windowStart:'',windowEnd:'',pvReferenceDate:'',discountRatePct:6.5,assumedCpiPct:3,baselineMode:'continue'},
+          current:c, proposals:[blankProposal(1,c)]}; }
+
+function engineGlob(){ const g=state.glob;
+  return {windowStart:g.windowStart,windowEnd:g.windowEnd,pvReferenceDate:g.pvReferenceDate||g.windowStart,
+    discountRate:(Number(g.discountRatePct)||0)/100,assumedCpi:(Number(g.assumedCpiPct)||0)/100,
+    baselineMode:g.baselineMode||'continue'}; }
+function normEsc(list){ return (list||[]).map(e=>Object.assign({},e,{
+  rate: e.type==='fixed_amount'?(Number(e.ratePct)||0):(Number(e.ratePct)||0)/100,
+  floorPct: e.floorPctIn===''||e.floorPctIn==null?null:Number(e.floorPctIn)/100,
+  capPct:   e.capPctIn===''||e.capPctIn==null?null:Number(e.capPctIn)/100 })); }
+function normLease(l){ return Object.assign({},l,{escalators:normEsc(l.escalators)}); }
+function normProp(p){ return Object.assign({},p,{escalators:normEsc(p.escalators)}); }
+
+/* ==========================================================================
+   FIELD HELP — one shared bubble, positioned in viewport coordinates so it
+   never clips at a panel edge. Markup carries only a key; the prose lives in
+   TIP, so the same text serves both the static and the templated panels.
+   ========================================================================== */
+const TIP={
+/* --- analysis settings --- */
+windowStart:"The date the comparison begins. Every scenario is measured from here, so totals are like-for-like. The current lease is assumed <b>already in force</b> on this date — which is why the Current Lease panel asks for the rent payable <i>as at</i> this date rather than a term start. Usually today, or the first of the month you are negotiating in.",
+windowEnd:"The date the comparison stops. Payments after it are excluded from every scenario. Set it to the furthest obligation across all scenarios — the button to the right does this — so that no proposal is judged over a shorter span than another.",
+projectName:"Names this negotiation — typically the site name or ID. It appears in the browser tab, leads the filename when you save the project or export a CSV, and becomes the default filename when you Print to PDF, so a saved file identifies its site without renaming. It is also written into the header of every CSV export. Purely a label: it never affects a calculation, and it is deliberately excluded from saved defaults.",
+pvReferenceDate:"The date future money is discounted back to: the \u201cin today\u2019s dollars\u201d date. Normally the same as the window start. Changing it scales every scenario by the same factor, so it moves the totals but not the ranking.",
+discountRatePct:"Your annual cost of capital, used to convert future rent into present value. A higher rate makes distant payments matter less, which favours proposals that are cheap now and expensive later. Enter 0 to compare undiscounted cash. Check the Sensitivity tab — if the ranking flips across rates, say so in the recommendation.<br><br>The <b>6.5% default</b> treats rent as a contractual obligation and prices it near an incremental borrowing rate — investment-grade corporate paper yields around 5.2–5.4%, and tower and carrier costs of capital sit around 6.3–6.8%. It is deliberately <i>not</i> the 8–14% lease-buyout firms use: that is a buy-side required return, and applying it here understates long-dated rent and flatters steep back-loaded escalators. Override it if your treasury mandates a rate.",
+assumedCpiPct:"The annual inflation rate assumed wherever a CPI escalator appears. An <b>assumption, not a forecast</b>: anything depending on it is flagged, and the Sensitivity tab reruns everything at other rates. Ignored if no scenario uses a CPI escalator.",
+baselineMode:"What \u201cdo nothing\u201d means after the current lease expires. <b>Terms continue</b> keeps charging the current rent and escalator to the window end, so a proposal that extends the term is not penalised merely for covering more time; the continued portion is flagged as an assumption. <b>Obligation ends</b> stops at expiry, which makes longer proposals look far more expensive on totals — compare effective monthly instead.",
+/* --- current lease --- */
+curTermEnd:"The <b>last day of occupancy</b> under the lease as it stands — the expiry date the document states. Enter that date itself, not the day after. It marks where contractual obligation ends and the baseline continuation assumption begins.",
+curFinalTermEnd:"The <b>last day of occupancy if every remaining option is exercised</b> — the end of the contractual right, not of the term now running. Optional, and it changes what the baseline means.<br><br>Leave it <b>blank</b> and “terms continue” runs the current lease to the window end, flagging the whole tail past expiry as an assumption. That is the safe default when the options are unknown.<br><br><b>Set it</b> and the baseline stops there instead. The distinction matters: up to this date the tenant <i>has the right</i> to be on site by exercising options the lease already grants, which is a decision rather than a guess. Past it there is no right at all, and continuing would assume a renewal nobody has agreed to. If the window runs beyond this date the shortfall is reported rather than quietly filled in.<br><br>It does <b>not</b> drive escalation. A lease that steps at each option renewal is an escalator row with a cadence to match — usually 60 months.",
+curBaseRent:"The rent <b>actually payable on the window start date</b>, after every escalation that has already happened — not the original commencement rent. If the lease began at 5,000 in 2014 and has escalated to 7,500 by now, enter 7,500.",
+rentBasis:"Whether the amount to the left is per month or per year. Annual figures are divided by twelve internally; every rate shown in the results is monthly.",
+payCadence:"How often rent is actually <b>invoiced</b> — monthly, quarterly, semiannual or annual. This drives the timing of cash flows and therefore present value. It is independent of how often rent <i>escalates</i>, which is set per escalator below.",
+firstPaymentDate:"<b>Any</b> payment date in the cycle — it need not be the first, and it need not fall inside the analysis window. It fixes the <b>phase</b> of the payment cycle: for annual rent due each 1 April, any 1 April will do. Periods are stepped backwards and forwards from it.<br><br>How much of the date is read depends on the payment cadence. <b>Monthly</b> — the day of the month only. <b>Quarterly, semiannual, annual</b> — month and day; the year is ignored, because a cycle that divides into 12 lands on the same date every year. A cadence that does <i>not</i> divide into 12 (a five-yearly cycle, say, which only arrives via CSV import) reads the year too, since it no longer repeats annually.<br><br>Leave blank to anchor on the period start.",
+paymentTiming:"<b>In advance</b> — payment falls at the start of the period it covers, the usual commercial lease. <b>In arrears</b> — at the end. Arrears payments sit further in the future, so they discount to slightly less.",
+prorationBasis:"How a <b>partial</b> period is charged. <b>Prorated</b> — a part period costs a proportional part of the rent. <b>Full period</b> — a part period is billed in full. <b>Prorated first period only</b> — the opening stub is prorated, everything after is billed in full.",
+paymentDayRule:"What happens when the payment day does not exist in a month &mdash; rent due the 31st, in February. Only matters when the payment cycle anchor falls on the 29th, 30th or 31st.<br><br><b>Return to the nominal day</b> clamps only in the short month, then goes back: 31 Jan, 28 Feb, <b>31 Mar</b>, 30 Apr. This is the usual reading of “the 31st” and the default.<br><br><b>Last day of the month</b> tracks month ends regardless of the anchor's day &mdash; a different clause, and a different schedule: an anchor on the 28th gives 28 Feb, <b>31 Mar</b>, 30 Apr rather than the 28th every month.<br><br><b>Stay on the clamped day</b> is a <b>legacy reproduction setting, not a lease convention</b>: once February clamps the day it never recovers (31 Jan, 28 Feb, <b>28 Mar</b>, 28 Apr). It exists so a project saved before this setting was added can reproduce its old numbers exactly. No lease says this.",
+prorationConvention:"The day-count used whenever a period is prorated. <b>Actual / days in month</b> divides by the real length of that month. <b>Actual / 365</b> uses a 365-day year. <b>30 / 360</b> treats every month as 30 days. Where the lease is silent, run the alternatives and report the range rather than picking one.",
+/* --- escalators --- */
+escAppliesFrom:"Start of the <b>stretch of the term this clause governs</b> — the wider contract period. This is <b>not</b> the date of the first increase; that is <i>First adjustment</i>. Normally just the start of the term or the proposal. Add a second row only if the document swaps to a different escalation formula partway through, for example 3% fixed for ten years and CPI thereafter.",
+escAppliesTo:"End of the stretch of the term this clause governs. Adjustments stop after this date and rent then stays flat unless another escalator row covers the remainder. Normally the term end. Again, not a date on which anything increases.",
+escType:"<b>Fixed %</b> — rent rises by a stated percentage. <b>Fixed $</b> — rent rises by a stated dollar amount per month. <b>CPI</b> — rent rises by the assumed inflation rate from Analysis Settings, optionally floored and capped; results then carry an assumption flag.<br><br><b>Disabled</b> — the row is ignored entirely, exactly as if it had been deleted; its dates and rate are kept but read by nothing, and the rest of the row greys out to show it. Useful for testing a variant without losing the inputs. It does <b>not</b> mean escalation stops here — to end escalation on a date, set that row's <i>Applies to</i>. A disabled row is always flagged in Validation so it cannot sit there unnoticed.",
+escRate:"For <b>Fixed %</b>, the percentage applied at each adjustment: enter 3 for 3%. For <b>Fixed $</b>, the dollars added to <b>monthly</b> rent at each adjustment. Ignored for CPI, which draws on the assumed CPI instead.",
+escCadence:"Months between adjustments — 12 for annual, 60 for five-yearly, 1 for monthly. Enter <b>0</b> for a <b>one-time step</b>: it applies once, on the First adjustment date, and never repeats.",
+escFirstAdj:"The date the <b>first increase actually takes effect</b>. Every later increase falls at the cadence interval from here, so this sets the day and month of all future steps — 15 June means every step lands on 15 June. It may sit before the analysis window; earlier steps are used only to establish the rhythm and are never charged.",
+escCompounding:"<b>Compound on prior</b> — each increase applies to the rent then in force, so increases build on one another. This is the usual reading. <b>Simple on base</b> — each increase applies to the rent at the start of this escalator, so a 3% escalator adds 3% of the original rent every time. Where the clause is ambiguous the Sensitivity tab prices both.",
+escFloor:"Minimum increase per adjustment, in percent. A floor of 2 means rent rises at least 2% even if inflation comes in lower. CPI escalators only. A floor with no cap is one-sided in the landlord\u2019s favour and is flagged.",
+escCap:"Maximum increase per adjustment, in percent. A cap of 4 means rent rises no more than 4% however high inflation runs. CPI escalators only. Leave blank for uncapped.",
+/* --- one-time payments --- */
+otLabel:"What the payment is for — signing consideration, buyout, prepaid rent, a contribution to costs. Carried through to the payment schedule so it can be traced.",
+otDate:"The date the payment is made. It is discounted from this date, and it only counts towards a scenario if it falls inside the analysis window.",
+otAmount:"The gross amount, entered as a <b>positive</b> number. Which way the money flows is set by Direction, not by the sign.",
+otDirection:"<b>Tenant pays</b> adds to the cost of the scenario. <b>Landlord pays</b> — an inducement, contribution or buyout received — subtracts from it.",
+/* --- proposals --- */
+propEffective:"The date the amendment takes effect. Before it, this scenario runs on the <b>current lease\u2019s</b> terms exactly as entered above; from it, the terms in this card govern. Usually the single most consequential field: a later effective date simply means more months at the existing rent.",
+propRentMode:"How the new rent is expressed. <b>Stated amount</b> — a figure lifted from the document. <b>% of then-current</b> — a percentage of whatever the current rent has escalated to by the effective date, so 85 is a 15% cut. <b>Then-current \u00b1 $</b> — a dollar adjustment to that same figure. <b>Unchanged</b> — rent carries over untouched, for proposals that only alter term or escalation.",
+propRentValue:"The number that goes with the pricing mode to the left: a rent amount, a percentage, or a dollar change. Under percentage pricing, values below 100 are reductions and above 100 are increases.",
+propRentBasis:"Whether the stated amount is monthly or annual. Applies to stated-amount pricing only — the relative modes always work from the then-current monthly rent.",
+propTermEnd:"The <b>last day of occupancy</b> the proposal offers. Enter that date itself, not the day after. Extending well past the current expiry is what makes the baseline setting matter — check Analysis Settings if a proposal runs years beyond the lease."
+};
+function tip(k){ return '<span class="info" tabindex="0" role="button" aria-label="Explain this field" data-tipkey="'+k+'">i</span>'; }
+
+/* ---------- payment cycle anchor ----------
+   The anchor is a phase marker, not "the first payment": buildPeriods steps
+   backwards and forwards from it in cadence-month jumps, so any date in the
+   cycle yields the same schedule. That also means not every part of the date is
+   read. A cadence that divides evenly into 12 lands on the same month-and-day
+   every year, making the year inert — which covers every option in the cadence
+   dropdown (1/3/6/12). Only a cadence that does not divide into 12, reachable
+   solely through CSV import, makes the year load-bearing.
+
+   The field used to be labelled "First payment date" with a date input showing
+   a year, which implied both that it had to be the first payment and that the
+   year mattered. Neither is generally true, so the label is now honest and this
+   hint states, live, exactly which parts of the date are being read. */
+function anchorReads(cad){
+  const c=Math.max(1,Math.round(Number(cad)||1));
+  if(c===1)    return 'Cycle repeats monthly — only the day of the month is read.';
+  if(12%c===0) return 'Cycle repeats yearly — only the month and day are read; the year is ignored.';
+  return 'A '+c+'-month cycle does not repeat yearly — the whole date, year included, is read.';
+}
+function anchorHint(cad,id){ return '<div class="hint anchor-hint" id="'+id+'">'+esc(anchorReads(cad))+'</div>'; }
+/* Cadence changes do not re-render the card (that would steal focus mid-edit),
+   so the hints are patched in place instead. */
+function updateAnchorHints(){
+  const set=(id,cad)=>{ const el=document.getElementById(id); if(el) el.textContent=anchorReads(cad); };
+  set('anchorHint-c',state.current.cadenceMonths);
+  state.proposals.forEach((p,i)=>set('anchorHint-p'+i,p.cadenceMonths));
+}
+(function(){
+  const box=document.createElement('div'); box.className='tipbox'; document.body.appendChild(box);
+  const near=e=>(e.target&&e.target.closest)?e.target.closest('.info'):null;
+  function show(el){
+    const txt=TIP[el.dataset.tipkey]; if(!txt) return;
+    box.innerHTML=txt; box.style.visibility='hidden'; box.style.display='block';
+    box.style.left='0px'; box.style.top='0px';
+    const r=el.getBoundingClientRect(), b=box.getBoundingClientRect();
+    let left=r.left+r.width/2-b.width/2;
+    left=Math.max(8,Math.min(left,document.documentElement.clientWidth-b.width-8));
+    let top=r.top-b.height-9;
+    if(top<8) top=r.bottom+9;                       /* flip under when it would run off the top */
+    box.style.left=left+'px'; box.style.top=top+'px'; box.style.visibility='visible';
+  }
+  function hide(){ box.style.display='none'; }
+  document.addEventListener('mouseover',e=>{ const i=near(e); if(i) show(i); });
+  document.addEventListener('mouseout', e=>{ if(near(e)) hide(); });
+  document.addEventListener('focusin', e=>{ const i=near(e); i?show(i):hide(); });
+  document.addEventListener('focusout',e=>{ if(near(e)) hide(); });
+  document.addEventListener('click',   e=>{ const i=near(e); if(i){ e.preventDefault(); show(i); } });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') hide(); });
+  window.addEventListener('scroll',hide,true);
+  window.addEventListener('resize',hide);
+})();
+
+/* ==========================================================================
+   RENDER
+   ========================================================================== */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+/* fmt() lives in src/lease-engine.js — buildRateEvents() needs it for escalator
+   labels, and one copy beats two. It is defined by the time anything here runs. */
+function fmt0(n){ return n==null||isNaN(n)?'—':n.toLocaleString('en-US',{maximumFractionDigits:0}); }
+function sgn(n){ return (n>0?'+':'')+fmt(n); }
+function opt(cur,map){ return Object.entries(map).map(([k,v])=>`<option value="${k}" ${String(cur)===k?'selected':''}>${v}</option>`).join(''); }
+const CAD={1:'Monthly',3:'Quarterly',6:'Semiannual',12:'Annual'};
+const CONV={actual_month:'Actual / days in month',actual_365:'Actual / 365',thirty_360:'30 / 360'};
+/* "Clamped" is a legacy reproduction setting, not a lease convention — it is
+   labelled as such so nobody picks it off the list thinking it describes a
+   real clause. */
+const PAYDAY={anchored:'Return to the nominal day',last_day:'Last day of the month',
+              clamped:'Stay on the clamped day (legacy)'};
+const BASIS={prorated:'Prorated',full_period:'Full period (no proration)',prorated_start_only:'Prorated first period only'};
+
+function renderGlobals(){
+  document.querySelectorAll('[data-g]').forEach(el=>{
+    /* Never rewrite the field being typed into. The handler has already put the
+       value into state, so reassigning .value is a no-op in content but not in
+       behaviour — assigning to an input's value moves the caret to the end, which
+       makes editing the middle of a name impossible. */
+    if(el===document.activeElement) return;
+    el.value=state.glob[el.dataset.g]??'';
+  });
+  document.title=docTitle();
+  renderBaselineNote();
+}
+/* Used for the browser tab, and picked up as the default filename by Print to
+   PDF, so a printed comparison lands named after the site rather than after the
+   tool. */
+function docTitle(){
+  const n=String(state.glob.projectName||'').trim();
+  return n? n+' — Lease Proposal Comparator' : 'Lease Proposal Comparator';
+}
+/* Filename-safe slug: keeps letters, digits and dashes, collapses everything
+   else. Returns '' for a blank or punctuation-only name so callers can fall
+   back rather than emit a file called "-.json". */
+function slug(s){
+  return String(s||'').trim().toLowerCase()
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60);
+}
+/* Kept separate from renderGlobals so it can be refreshed on ANY edit. It reads
+   the current lease's term end as well as the global settings, so editing the
+   lease has to repaint it too — not just editing Analysis Settings.          */
+function renderBaselineNote(){
+  const n=document.getElementById('baselineNote'); if(!n) return;
+  const ce=effEnd(state.current.termEnd), we=pd(state.glob.windowEnd);
+  const cont=(state.glob.baselineMode||'continue')!=='expire';
+  if(cont && ce && we && we>=ce){
+    const mo=Math.round(dayDiff(ce,addDays(we,1))/30.44);
+    n.innerHTML='Every scenario is measured over the same window at the same rate. The current lease expires '+
+      esc(state.current.termEnd)+'; the baseline assumes its terms — rent, escalator, cadence and proration — '+
+      '<b>continue for a further '+mo+' months</b> to the window end, so a proposal that extends the term is not '+
+      'penalised simply for covering more time. <span class="assume">The continued portion is an assumption, flagged throughout.</span>';
+  } else if(!cont){
+    n.innerHTML='Every scenario is measured over the same window at the same rate. The baseline stops at the stated expiry, '+
+      'so any proposal extending beyond it will show a larger total for that reason alone — compare the effective monthly figures, not the totals.';
+  } else n.textContent='Every scenario is evaluated over the same window at the same rate. A payment counts when its payment date falls inside the window.';
+}
+function matchHorizon(){
+  const ends=state.proposals.map(p=>effEnd(p.termEnd)).filter(Boolean);
+  const ce=effEnd(state.current.termEnd); if(ce) ends.push(ce);
+  if(!ends.length){ alert('Enter proposal term end dates first.'); return; }
+  const mx=new Date(Math.max.apply(null,ends));
+  state.glob.windowEnd=fd(addDays(mx,-1)); renderAll();
+  toast('Window end set to '+state.glob.windowEnd+' — the furthest obligation across all scenarios.');
+}
+
+function escRows(owner,oi,list){
+  return `<div class="sub-list">
+    <div class="row" style="margin-bottom:6px"><h3 style="margin:0">Escalators</h3><div class="spacer"></div>
+      <button class="sm noprint" onclick="addEsc('${owner}',${oi})">+ Add Escalator</button></div>
+    ${(list||[]).length?`<div class="sub-row" style="margin-bottom:2px">
+      <label>Applies from ${tip('escAppliesFrom')}</label><label>Applies to ${tip('escAppliesTo')}</label>
+      <label>Type ${tip('escType')}</label><label>Rate %/$ ${tip('escRate')}</label>
+      <label>Cadence mo ${tip('escCadence')}</label><label>First adjustment ${tip('escFirstAdj')}</label>
+      <label>Compounding ${tip('escCompounding')}</label>
+      <label>Floor % ${tip('escFloor')}</label><label>Cap % ${tip('escCap')}</label><label></label></div>`
+      /* Deliberately not the word "None": the Type dropdown has a "None" option
+         that means "ignore this row", which is a different thing from having no
+         rows at all. Using the same word for both invites reading Type: None as
+         "escalation stops here" — which it is not; that is Applies to. */
+      :'<p class="hint">No escalators &mdash; rent stays flat for this period.</p>'}
+    ${(list||[]).map((e,j)=>{
+      /* "Disabled" means the engine skips the row wholesale, so every input
+         except the Type selector and the delete button is greyed out. Leaving
+         them editable implied the values still did something — which is exactly
+         the misreading that made a disabled row dangerous. */
+      const off=e.type==='none', d=off?'disabled':'';
+      return `<div class="sub-row${off?' off':''}">
+      <input type="date" data-${owner}="${oi}" data-e="${j}" data-f="appliesFrom" value="${esc(e.appliesFrom)}" ${d}>
+      <input type="date" data-${owner}="${oi}" data-e="${j}" data-f="appliesTo" value="${esc(e.appliesTo)}" ${d}>
+      <select data-${owner}="${oi}" data-e="${j}" data-f="type">${opt(e.type,{fixed_pct:'Fixed %',fixed_amount:'Fixed $',cpi:'CPI (assumed)',none:'Disabled'})}</select>
+      <input type="number" step="0.001" data-${owner}="${oi}" data-e="${j}" data-f="ratePct" value="${esc(e.ratePct)}" ${off||e.type==='cpi'?'disabled':''}>
+      <input type="number" step="1" min="0" title="Months between adjustments — 12 annual, 60 five-yearly. Enter 0 for a single one-time step." data-${owner}="${oi}" data-e="${j}" data-f="cadenceMonths" value="${esc(e.cadenceMonths)}" ${d}>
+      <input type="date" data-${owner}="${oi}" data-e="${j}" data-f="firstAdjustment" value="${esc(e.firstAdjustment)}" ${d}>
+      <select data-${owner}="${oi}" data-e="${j}" data-f="compounding" ${d}>${opt(e.compounding,{on_prior:'Compound on prior',on_base:'Simple on base'})}</select>
+      <input type="number" step="0.01" data-${owner}="${oi}" data-e="${j}" data-f="floorPctIn" value="${esc(e.floorPctIn)}" ${off||e.type!=='cpi'?'disabled':''}>
+      <input type="number" step="0.01" data-${owner}="${oi}" data-e="${j}" data-f="capPctIn" value="${esc(e.capPctIn)}" ${off||e.type!=='cpi'?'disabled':''}>
+      <button class="sm danger noprint" onclick="delEsc('${owner}',${oi},${j})">×</button></div>`;}).join('')}
+    ${(list||[]).length?'<p class="hint">Cadence is the number of months between adjustments — 12 for annual, 60 for five-yearly. Enter <b>0</b> for a <b>one-time step</b>: it applies once, on the first-adjustment date, and never repeats.</p>':''}
+  </div>`;
+}
+function otRows(owner,oi,list){
+  return `<div class="sub-list">
+    <div class="row" style="margin-bottom:6px"><h3 style="margin:0">One-time payments</h3><div class="spacer"></div>
+      <button class="sm noprint" onclick="addOT('${owner}',${oi})">+ Add Payment</button></div>
+    ${(list||[]).length?`<div class="ot-row" style="margin-bottom:2px">
+      <label>Label ${tip('otLabel')}</label><label>Date ${tip('otDate')}</label><label>Amount ${tip('otAmount')}</label>
+      <label>Direction ${tip('otDirection')}</label><label></label></div>`:
+      '<p class="hint">None. Include only amounts written into the document — signing consideration, buyout, prepaid rent.</p>'}
+    ${(list||[]).map((o,j)=>`<div class="ot-row">
+      <input data-${owner}="${oi}" data-o="${j}" data-f="label" value="${esc(o.label)}">
+      <input type="date" data-${owner}="${oi}" data-o="${j}" data-f="date" value="${esc(o.date)}">
+      <input type="number" step="0.01" data-${owner}="${oi}" data-o="${j}" data-f="amount" value="${esc(o.amount)}">
+      <select data-${owner}="${oi}" data-o="${j}" data-f="direction">${opt(o.direction,{to_landlord:'Tenant pays',to_tenant:'Landlord pays'})}</select>
+      <button class="sm danger noprint" onclick="delOT('${owner}',${oi},${j})">×</button></div>`).join('')}
+  </div>`;
+}
+
+function renderCurrent(){
+  const c=state.current;
+  document.getElementById('currentLease').innerHTML=`
+    <div class="grid g5">
+      <div><label>Term end (last day of occupancy) ${tip('curTermEnd')}</label><input type="date" data-c="0" data-f="termEnd" value="${esc(c.termEnd)}"></div>
+      <div><label>Final term end, options exercised ${tip('curFinalTermEnd')}</label><input type="date" data-c="0" data-f="finalTermEnd" value="${esc(c.finalTermEnd||'')}" placeholder="optional"></div>
+      <div><label>Rent at window start ${tip('curBaseRent')}</label><input type="number" step="0.01" data-c="0" data-f="baseRent" value="${esc(c.baseRent)}"></div>
+      <div><label>Rent basis ${tip('rentBasis')}</label><select data-c="0" data-f="rentBasis">${opt(c.rentBasis,{monthly:'Monthly',annual:'Annual'})}</select></div>
+      <div><label>Payment cadence ${tip('payCadence')}</label><select data-c="0" data-f="cadenceMonths">${opt(String(c.cadenceMonths),CAD)}</select></div>
+    </div>
+    <div class="grid g5" style="margin-top:10px">
+      <div><label>Payment cycle anchor ${tip('firstPaymentDate')}</label><input type="date" data-c="0" data-f="firstPaymentDate" value="${esc(c.firstPaymentDate)}" placeholder="any date in the cycle">${anchorHint(c.cadenceMonths,'anchorHint-c')}</div>
+      <div><label>Payment timing ${tip('paymentTiming')}</label><select data-c="0" data-f="paymentTiming">${opt(c.paymentTiming,{advance:'In advance',arrears:'In arrears'})}</select></div>
+      <div><label>Proration basis ${tip('prorationBasis')}</label><select data-c="0" data-f="prorationBasis">${opt(c.prorationBasis,BASIS)}</select></div>
+      <div><label>Proration convention ${tip('prorationConvention')}</label><select data-c="0" data-f="prorationConvention">${opt(c.prorationConvention,CONV)}</select></div>
+      <div><label>Missing payment day ${tip('paymentDayRule')}</label><select data-c="0" data-f="paymentDayRule">${opt(c.paymentDayRule||'anchored',PAYDAY)}</select></div>
+    </div>
+    ${escRows('c',0,c.escalators)}
+    ${otRows('c',0,c.oneTimePayments)}`;
+}
+
+function renderProposals(){
+  const cur=state.current;
+  document.getElementById('proposals').innerHTML=state.proposals.map((p,i)=>{
+    const relative = p.rentMode!=='absolute';
+    const rentLabel = {absolute:'New rent amount',pct_of_current:'Percent of then-current rent (%)',
+      delta_from_current:'Change to then-current rent ($/mo)',unchanged:'—'}[p.rentMode];
+    return `<div class="prop-card">
+      <div class="row" style="margin-bottom:10px">
+        <input style="width:230px;font-weight:650" data-p="${i}" data-f="label" value="${esc(p.label)}">
+        <span class="badge grey">amendment</span>
+        <div class="spacer"></div>
+        <div class="noprint">
+          <button class="sm" onclick="dupProposal(${i})">Duplicate</button>
+          <button class="sm danger" onclick="delProposal(${i})" ${state.proposals.length<=1?'disabled':''}>Remove</button>
+        </div>
+      </div>
+      <div id="tl${i}"></div>
+      <div class="grid g5">
+        <div><label>Effective date ${tip('propEffective')}</label><input type="date" data-p="${i}" data-f="effectiveDate" value="${esc(p.effectiveDate)}"></div>
+        <div><label>Rent at effective date ${tip('propRentMode')}</label><select data-p="${i}" data-f="rentMode">${opt(p.rentMode,
+          {absolute:'Stated amount',pct_of_current:'% of then-current',delta_from_current:'Then-current ± $',unchanged:'Unchanged'})}</select></div>
+        <div><label>${rentLabel} ${tip('propRentValue')}</label><input type="number" step="0.01" data-p="${i}" data-f="rentValue" value="${esc(p.rentValue)}" ${p.rentMode==='unchanged'?'disabled':''}></div>
+        <div><label>Rent basis ${tip('propRentBasis')}</label><select data-p="${i}" data-f="rentBasis" ${relative?'disabled':''}>${opt(p.rentBasis,{monthly:'Monthly',annual:'Annual'})}</select></div>
+        <div><label>New term end (last day) ${tip('propTermEnd')}</label><input type="date" data-p="${i}" data-f="termEnd" value="${esc(p.termEnd)}"></div>
+      </div>
+      <div class="grid g6" style="margin-top:10px">
+        <div><label>Payment cadence ${tip('payCadence')}</label><select data-p="${i}" data-f="cadenceMonths">${opt(String(p.cadenceMonths),CAD)}</select></div>
+        <div><label>Payment cycle anchor ${tip('firstPaymentDate')}</label><input type="date" data-p="${i}" data-f="firstPaymentDate" value="${esc(p.firstPaymentDate)}" placeholder="defaults to effective date">${anchorHint(p.cadenceMonths,'anchorHint-p'+i)}</div>
+        <div><label>Payment timing ${tip('paymentTiming')}</label><select data-p="${i}" data-f="paymentTiming">${opt(p.paymentTiming,{advance:'In advance',arrears:'In arrears'})}</select></div>
+        <div><label>Proration basis ${tip('prorationBasis')}</label><select data-p="${i}" data-f="prorationBasis">${opt(p.prorationBasis,BASIS)}</select></div>
+        <div><label>Proration convention ${tip('prorationConvention')}</label><select data-p="${i}" data-f="prorationConvention">${opt(p.prorationConvention,CONV)}</select></div>
+        <div><label>Missing payment day ${tip('paymentDayRule')}</label><select data-p="${i}" data-f="paymentDayRule">${opt(p.paymentDayRule||'anchored',PAYDAY)}</select></div>
+      </div>
+      <p class="hint"><span class="inherit">Before ${p.effectiveDate?esc(p.effectiveDate):'the effective date'}</span> this scenario carries the current lease exactly as entered above — same rent, escalators, cadence and proration. The fields here govern only from the effective date forward.</p>
+      ${escRows('p',i,p.escalators)}
+      ${otRows('p',i,p.oneTimePayments)}
+    </div>`;
+  }).join('');
+  renderTimelines();
+}
+
+function renderTimelines(){
+  const cur=state.current, cStart=pd(state.glob.windowStart), cEnd=effEnd(cur.termEnd);
+  const wS=pd(state.glob.windowStart), wE=pd(state.glob.windowEnd);
+  state.proposals.forEach((p,i)=>{
+    const host=document.getElementById('tl'+i); if(!host) return;
+    const eff=pd(p.effectiveDate), pEnd=effEnd(p.termEnd);
+    if(!cStart||!cEnd||!eff||!pEnd||!wS||!wE){ host.innerHTML=''; return; }
+    const a=maxD(cStart,wS), z=minD(maxD(pEnd,cEnd),wE);
+    const span=dayDiff(a,z); if(span<=0){ host.innerHTML=''; return; }
+    const iw=Math.max(0,Math.min(dayDiff(a,minD(eff,z)),span));
+    const nw=Math.max(0,span-iw);
+    const cut=minD(eff,z);
+    /* Each segment carries a full label, a shortened one and a title. fitTimeline
+       picks whichever fits; the key below the bar carries the dates regardless,
+       so a hairline segment never hides information outright.                  */
+    const seg=(cls,flex,full,short)=>
+      `<div class="${cls}" style="flex:${flex}" title="${esc(full)}"
+        ><span class="tl-lbl" data-full="${esc(full)}" data-short="${esc(short)}">${esc(full)}</span></div>`;
+    const iFull=`Current lease terms · ${fd(a)} → ${fd(cut)}`;
+    const nFull=`${p.label} · ${fd(cut)} → ${fd(z)}`;
+    host.innerHTML=`<div class="timeline">
+      ${iw>0?seg('tl-interim',iw,iFull,'Current terms'):''}
+      ${nw>0?seg('tl-new',nw,nFull,p.label||'Proposal'):''}
+    </div>
+    <div class="tl-key">
+      ${iw>0?`<span><i class="k-interim"></i>Current lease terms · ${esc(fd(a))} → ${esc(fd(cut))}</span>`:''}
+      ${nw>0?`<span><i class="k-new"></i>${esc(p.label||'Proposal')} · ${esc(fd(cut))} → ${esc(fd(z))}</span>`:''}
+    </div>`;
+    fitTimeline(host);
+  });
+}
+
+/* ---------- timeline label fitting ----------
+   A segment's width is a share of the elapsed term, so a short interim period
+   next to a 20-year proposal can render only a few pixels wide. CSS alone can
+   only clip or ellipsise, which leaves an unreadable fragment like "2026-".
+   So measure instead: try the full label, fall back to a short one, and hide
+   the text altogether rather than show a stub. The hover title and the key
+   beneath the bar still carry the full text either way.                      */
+function fitTimeline(root){
+  (root||document).querySelectorAll('.timeline>div').forEach(sg=>{
+    const lbl=sg.querySelector('.tl-lbl'); if(!lbl) return;
+    lbl.style.display='';
+    lbl.textContent=lbl.dataset.full||'';
+    /* A zero measurement means the bar is not laid out yet (hidden container,
+       pre-paint call). Treat that as "unknown", not "too narrow" — otherwise a
+       perfectly wide segment gets its label stripped and never restored. */
+    if(!sg.clientWidth) return;
+    for(const form of [lbl.dataset.full,lbl.dataset.short]){
+      if(!form) continue;
+      lbl.textContent=form;
+      if(lbl.scrollWidth<=lbl.clientWidth+1) return;   /* fits — keep this form */
+    }
+    lbl.style.display='none';
+  });
+}
+/* Widths change with the viewport and again on the print sheet, so re-fit for
+   both rather than only at render time. */
+let tlFitTimer=null;
+window.addEventListener('resize',()=>{ clearTimeout(tlFitTimer);
+  tlFitTimer=setTimeout(()=>fitTimeline(document),120); });
+window.addEventListener('beforeprint',()=>fitTimeline(document));
+
+function renderAll(){ renderGlobals(); renderCurrent(); renderProposals(); calc(); }
+
+/* ---------- binding ---------- */
+let timer=null;
+document.addEventListener('input',e=>{
+  const t=e.target, d=t.dataset; if(!d) return;
+  if(d.g!==undefined){ state.glob[d.g]=t.value; renderGlobals(); renderTimelines(); sched(); return; }
+  let owner=null,idx=null;
+  if(d.c!==undefined){ owner=state.current; }
+  else if(d.p!==undefined){ owner=state.proposals[+d.p]; idx=+d.p; }
+  if(!owner) return;
+  if(d.e!==undefined) owner.escalators[+d.e][d.f]=t.value;
+  else if(d.o!==undefined) owner.oneTimePayments[+d.o][d.f]=t.value;
+  else owner[d.f]=t.value;
+  if(d.f==='type'||d.f==='rentMode'){ renderCurrent(); renderProposals(); }
+  if(d.f==='cadenceMonths') updateAnchorHints();
+  if(d.f==='effectiveDate'||d.f==='termEnd'||d.f==='label') renderTimelines();
+  renderBaselineNote();   /* the note quotes the current lease's expiry — repaint on every edit */
+  sched();
+});
+document.addEventListener('change',e=>{ if(e.target.dataset&&e.target.dataset.f) sched(); });
+function sched(){ clearTimeout(timer); timer=setTimeout(calc,280); }
+
+function addProposal(){ state.proposals.push(blankProposal(state.proposals.length+1,state.current)); renderAll(); }
+function dupProposal(i){ const c=JSON.parse(JSON.stringify(state.proposals[i]));
+  c.id='p'+Math.random().toString(36).slice(2,8); c.label+=' (copy)';
+  state.proposals.splice(i+1,0,c); renderAll(); }
+function delProposal(i){ state.proposals.splice(i,1); renderAll(); }
+function own(o,i){ return o==='c'?state.current:state.proposals[i]; }
+function addEsc(o,i){ const x=own(o,i), e=blankEsc();
+  if(o==='c'){ const ws=state.glob.windowStart; e.appliesFrom=ws; e.appliesTo=x.termEnd;
+    e.firstAdjustment=ws?fd(addMonths(pd(ws),12)):''; }
+  else { e.appliesFrom=x.effectiveDate; e.appliesTo=x.termEnd;
+    e.firstAdjustment=x.effectiveDate?fd(addMonths(pd(x.effectiveDate),12)):''; }
+  x.escalators.push(e); renderAll(); }
+function delEsc(o,i,j){ own(o,i).escalators.splice(j,1); renderAll(); }
+function addOT(o,i){ own(o,i).oneTimePayments.push(blankOT()); renderAll(); }
+function delOT(o,i,j){ own(o,i).oneTimePayments.splice(j,1); renderAll(); }
+
+/* ==========================================================================
+   VALIDATION
+   ========================================================================== */
+function validate(){
+  const errs=[],warns=[],g=state.glob,c=state.current;
+  const ws=pd(g.windowStart),we=pd(g.windowEnd);
+  if(!ws||!we) errs.push('Analysis window start and end are required.');
+  else if(we<=ws) errs.push('Analysis window end must be after window start.');
+  if(g.discountRatePct===''||isNaN(Number(g.discountRatePct))) errs.push('Discount rate is required (enter 0 for no discounting).');
+
+  /* the current lease is assumed in force at the window start */
+  const cs=ws, ce=effEnd(c.termEnd);
+  if(c.baseRent===''||isNaN(Number(c.baseRent))) errs.push('Current lease: rent at the window start is required.');
+  if(!ce) errs.push('Current lease: term end is required.');
+  else if(cs){
+    if(ce<=cs) errs.push('Current lease: term end must fall after the analysis window start — the lease is assumed to be in force on that date.');
+    if(ce.getUTCDate()!==1) warns.push(`Current lease ends mid-month (${esc(c.termEnd)}) — final stub prorated under "${CONV[c.prorationConvention]}".`);
+    checkEsc(c.escalators,'Current lease',cs,ce,errs,warns);
+    checkPaymentDay(c,'Current lease',cs,ce,warns);
+  }
+
+  let anyCpi=(c.escalators||[]).some(e=>e.type==='cpi');
+  state.proposals.forEach(p=>{
+    const n=p.label||'Proposal';
+    const eff=pd(p.effectiveDate), pe=effEnd(p.termEnd);
+    if(!eff){ errs.push(`${n}: effective date is required — it is the date the amendment takes effect.`); return; }
+    if(!pe){ errs.push(`${n}: new term end is required.`); return; }
+    if(pe<=eff) errs.push(`${n}: term end must be after the effective date.`);
+    if(cs&&eff<cs) warns.push(`${n}: effective date precedes the analysis window start — no interim period is measured for this scenario.`);
+    if(ce&&eff>ce) warns.push(`${n}: effective date ${esc(p.effectiveDate)} falls after the current lease expires — there is an unmodeled gap in between.`);
+    if(p.rentMode!=='unchanged'&&(p.rentValue===''||isNaN(Number(p.rentValue)))) errs.push(`${n}: rent value is required for the selected pricing mode.`);
+    if(p.rentMode==='pct_of_current'&&Number(p.rentValue)>100) warns.push(`${n}: priced at ${p.rentValue}% of then-current rent — an increase, not a reduction.`);
+    if(ws&&eff<ws) warns.push(`${n}: effective date precedes the window start, so no interim period is measured.`);
+    const cont=(g.baselineMode||'continue')!=='expire';
+    if(ce&&pe>ce&&!cont) warns.push(`${n}: extends the term ${Math.round(dayDiff(ce,pe)/30.44)} months beyond the current expiry, but the baseline is set to stop at expiry — the delta is inflated by the extra term. Switch the baseline to "terms continue" for a like-for-like comparison.`);
+    const we2=pd(g.windowEnd);
+    if(we2&&pe<we2) warns.push(`${n}: obligation ends ${Math.round(dayDiff(pe,addDays(we2,1))/30.44)} months before the window closes — nothing is modeled for the remainder, so its total understates a full-window cost.`);
+    if(eff&&eff.getUTCDate()!==1) warns.push(`${n}: takes effect mid-month (${esc(p.effectiveDate)}) — the payment period spanning that date is split between the old and new terms.`);
+    if((p.escalators||[]).some(e=>e.type==='cpi')) anyCpi=true;
+    checkEsc(p.escalators,n,eff,pe,errs,warns);
+    checkPaymentDay(p,n,eff,pe,warns);
+    (p.oneTimePayments||[]).forEach((o,j)=>{
+      if(!o.date&&!o.amount&&!o.label) return;
+      if(!o.date||!o.amount) errs.push(`${n} · one-time payment ${j+1}: date and amount are both required.`);
+    });
+    if(p.prorationBasis!==c.prorationBasis||p.prorationConvention!==c.prorationConvention)
+      warns.push(`${n}: changes the proration basis or convention. The delta is decomposed below into rate-driven and convention-driven components.`);
+  });
+  if(anyCpi) warns.push(`A CPI escalator is present. Results depend on the assumed CPI of ${g.assumedCpiPct}% and are an assumption, not a forecast.`);
+  const fte=effEnd(c.finalTermEnd);
+  if(fte&&ce&&fte<ce)
+    errs.push(`Current lease: final term end (${esc(c.finalTermEnd)}) falls before the term end (${esc(c.termEnd)}). The final term end is the last day with every remaining option exercised, so it cannot precede the current expiry.`);
+  if((g.baselineMode||'continue')!=='expire' && ce && we && we>=ce){
+    const months=n=>Math.round(n/30.44);
+    if(!fte||fte<=ce){
+      warns.push(`Baseline assumes the current lease's terms continue ${months(dayDiff(ce,addDays(we,1)))} months past its stated expiry (${esc(c.termEnd)}). That portion is an assumption about the do-nothing case, not a contractual obligation — it is broken out separately in the summary. Enter a final term end if the lease still has options: continuing to a date you have the right to reach is a much stronger claim than continuing to the window edge.`);
+    } else if(fte>=addDays(we,1)){
+      warns.push(`Baseline continues ${months(dayDiff(ce,addDays(we,1)))} months past the stated expiry (${esc(c.termEnd)}), all of it within the option period running to ${esc(c.finalTermEnd)}. That is an assumption that the options are exercised, not that a renewal is agreed — a materially stronger position, though still a choice not yet made.`);
+    } else {
+      warns.push(`Options run out on ${esc(c.finalTermEnd)}, ${months(dayDiff(fte,addDays(we,1)))} months before the window closes. Nothing is modeled beyond that date, because no contractual right exists there — so the baseline understates against any proposal covering that span. Shorten the window to the last option, or price the gap deliberately.`);
+    }
+  }
+  return {errs,warns};
+}
+/* ---- legacy payment-anchor check ----
+   A project saved before "missing payment day" existed was effectively on the
+   legacy `clamped` behaviour, and the default is now `anchored`. That changes
+   the numbers — but ONLY when the anchor lands on the 29th, 30th or 31st,
+   since every other day exists in every month.
+
+   Silently moving someone's payment dates is exactly the failure this whole
+   setting was added to stop, so when it can bite, name the date that moved.
+   Both schedules are actually built and compared rather than described, so the
+   warning cannot drift away from what the engine really does. */
+function checkPaymentDay(t,label,startFallback,end,warns){
+  if(t.paymentDayRule) return;                       // set explicitly — nothing to warn about
+  const a=pd(t.firstPaymentDate)||startFallback;
+  if(!a||a.getUTCDate()<29||!end) return;            // the rules agree below the 29th
+  const oldP=buildPeriods(a,end,t.cadenceMonths,fd(a),'clamped');
+  const newP=buildPeriods(a,end,t.cadenceMonths,fd(a),'anchored');
+  let moved=null;
+  for(let i=0;i<Math.min(oldP.length,newP.length);i++){
+    if(!eqD(oldP[i].start,newP[i].start)){ moved={o:oldP[i].start,n:newP[i].start}; break; }
+  }
+  if(!moved) return;                                 // nothing actually shifted
+  warns.push(`${label}: the payment cycle anchor falls on day ${a.getUTCDate()}, and no "missing payment day" rule is saved in this project. `+
+    `It now defaults to "${PAYDAY.anchored}", so a payment that previously fell on ${fd(moved.o)} now falls on ${fd(moved.n)}. `+
+    `That is the intended correction — but if you need to reproduce the earlier figures exactly, set the rule to "${PAYDAY.clamped}".`);
+}
+function checkEsc(list,n,start,end,errs,warns){
+  const ranges=[]; let disabled=0, active=0;
+  (list||[]).forEach((e,j)=>{
+    const tag=`${n} · escalator ${j+1}`;
+    /* A disabled row is skipped by the engine AND by every check below it, so
+       without this warning it sits on screen holding dates and a rate while
+       contributing nothing — and nothing anywhere says so. Escalators drive
+       most of the 20-year cost, so silence here can understate a scenario
+       badly. */
+    if(e.type==='none'){ disabled++;
+      warns.push(`${tag}: type is Disabled — the whole row is ignored, including its dates and rate. To make escalation stop on a date, set that row's "applies to" instead.`);
+      return; }
+    active++;
+    const cadv=Number(e.cadenceMonths);
+    if(e.cadenceMonths===''||e.cadenceMonths==null||isNaN(cadv)||cadv<0)
+      errs.push(`${tag}: cadence must be 0 (a single one-time step) or a positive number of months.`);
+    if(cadv===0&&!e.firstAdjustment)
+      errs.push(`${tag}: a one-time escalator (cadence 0) needs a first-adjustment date — that is the date the single step takes effect.`);
+    if(e.type==='cpi'){
+      if(e.floorPctIn!==''&&(e.capPctIn===''||e.capPctIn==null)) warns.push(`${tag}: CPI floor with no cap — one-sided exposure.`);
+      if(e.floorPctIn!==''&&e.capPctIn!==''&&Number(e.floorPctIn)>Number(e.capPctIn)) errs.push(`${tag}: CPI floor exceeds cap.`);
+    } else if(e.ratePct===''||isNaN(Number(e.ratePct))) errs.push(`${tag}: rate is required.`);
+    if(!start||!end) return;
+    const f=pd(e.appliesFrom)||start,t=pd(e.appliesTo)||end,fa=pd(e.firstAdjustment)||f;
+    if(fa<f||fa>t) errs.push(`${tag}: first adjustment ${fd(fa)} falls outside its own applies-from/to range.`);
+    if(f<start) warns.push(`${tag}: applies-from precedes the period this schedule governs — earlier adjustments are ignored.`);
+    if(fa&&fa.getUTCDate()!==1) warns.push(`${tag}: adjustment lands mid-month (${fd(fa)}) — the affected period is split and prorated.`);
+    if(cadv===0) warns.push(`${tag}: one-time step on ${fd(fa)} — applied once, then rent stays flat for the rest of this escalator's range.`);
+    ranges.push({f,t,j:j+1});
+  });
+  /* The dangerous case: rows are present, so the panel looks configured, but
+     every one is disabled — rent runs flat for the entire term. */
+  if(disabled&&!active) warns.push(`${n}: every escalator row is Disabled, so rent stays flat for the whole term. If that is intended, deleting the rows states it more clearly than disabling them.`);
+  ranges.sort((a,b)=>a.f-b.f);
+  for(let k=1;k<ranges.length;k++){
+    if(ranges[k].f<ranges[k-1].t) warns.push(`${n}: escalator ranges ${ranges[k-1].j} and ${ranges[k].j} overlap — later adjustments stack on earlier ones.`);
+    else if(dayDiff(ranges[k-1].t,ranges[k].f)>1) warns.push(`${n}: gap in escalator coverage between ${fd(ranges[k-1].t)} and ${fd(ranges[k].f)} — rent is flat across the gap.`);
+  }
+}
+
+/* ==========================================================================
+   CALCULATE
+   ========================================================================== */
+function calc(){
+  const v=validate();
+  document.getElementById('validation').innerHTML=
+    v.errs.map(m=>`<div class="msg err"><b>Error</b> — ${esc(m)}</div>`).join('')+
+    loadWarnings.map(m=>`<div class="msg warn"><b>Loaded file</b> — ${esc(m)}</div>`).join('')+
+    v.warns.map(m=>`<div class="msg warn"><b>Note</b> — ${esc(m)}</div>`).join('')+
+    (!v.errs.length&&!v.warns.length&&!loadWarnings.length?'<div class="msg ok">All checks passed.</div>':'');
+  if(v.errs.length){ results=[]; document.getElementById('results').innerHTML='<p class="hint">Resolve the errors above to produce results.</p>'; renderTabs(); return; }
+
+  const g=engineGlob(), C=normLease(state.current);
+  const cur=computeScenario(C,null,g);
+  if(!cur){ results=[]; return; }
+  cur.label='Current Lease'; cur.isCurrent=true; cur.src=state.current;
+  results=[cur];
+
+  state.proposals.forEach(p=>{
+    const r=computeScenario(C,normProp(p),g);
+    if(!r) return;
+    r.label=p.label; r.src=p; r.isCurrent=false;
+    const eff=pd(p.effectiveDate);
+    /* the current lease split at the same effective date, for a like-for-like bridge */
+    let cInterim=0,cTail=0,cInterimN=0,cTailN=0;
+    cur.rows.forEach(x=>{ if(!x.inWindow) return;
+      if(x.payDate<eff){ cInterim+=x.pv; cInterimN+=x.amount; } else { cTail+=x.pv; cTailN+=x.amount; } });
+    r.curInterimPV=cInterim; r.curTailPV=cTail; r.curInterimNom=cInterimN; r.curTailNom=cTailN;
+    r.dInterimPV=r.interimPV-cInterim; r.dTailPV=r.newPV-cTail;
+    /* counterfactual: proposal terms under the current lease's proration settings */
+    const cf=computeScenario(C,normProp(p),g,{prorationBasis:state.current.prorationBasis,
+                                              prorationConvention:state.current.prorationConvention});
+    r.cfPV=cf?cf.totalPV:null;
+    results.push(r);
+  });
+  renderTabs(); renderResults();
+}
+function renderTabs(){
+  const t=[['summary','Summary'],['bridge','Delta Bridge'],['annual','Annual'],
+           ['schedule','Payment Schedule'],['rates','Rate Steps'],['sensitivity','Sensitivity & Breakeven']];
+  document.getElementById('tabs').innerHTML=t.map(([k,l])=>
+    `<div class="tab ${activeTab===k?'active':''}" onclick="activeTab='${k}';renderTabs();renderResults()">${l}</div>`).join('');
+}
+function renderResults(){
+  const h=document.getElementById('results');
+  if(!results.length){ h.innerHTML='<p class="hint">Enter the current lease and at least one proposal.</p>'; return; }
+  h.innerHTML=({summary:viewSummary,bridge:viewBridge,annual:viewAnnual,schedule:viewSchedule,
+                rates:viewRates,sensitivity:viewSensitivity}[activeTab])();
+}
+
+function viewSummary(){
+  const c=results[0];
+  const cont=(state.glob.baselineMode||'continue')!=='expire';
+  let h='';
+
+  h+=`<div class="msg ${cont?'ok':'warn'}" style="margin-bottom:14px">
+    <b>Baseline — do nothing.</b> ${cont
+      ? `The current lease runs to ${esc(state.current.termEnd)}; its terms are assumed to continue from there to ${esc(state.glob.windowEnd)}, so every scenario is measured over an identical span.`
+        + (c.assumedPV?` Of the baseline's ${fmt0(c.totalPV)} PV, <b>${fmt0(c.assumedPV)}</b> (${(c.assumedPV/c.totalPV*100).toFixed(0)}%) is that continuation assumption rather than contractual obligation.`:'')
+      : `The baseline stops at the stated expiry (${esc(state.current.termEnd)}). Scenarios covering different spans are not directly comparable on totals — read the effective monthly column instead.`}
+  </div>`;
+
+  h+='<div class="cards">';
+  results.forEach(r=>{
+    const d=r.totalPV-c.totalPV, pct=c.totalPV?d/c.totalPV*100:0;
+    h+=`<div class="kpi ${r.isCurrent?'base':''}">
+      <div class="lbl">${esc(r.label)}${r.isCurrent?' · do nothing':''}</div>
+      <div class="val">${fmt0(r.totalPV)}</div>
+      <div class="note">PV @ ${state.glob.discountRatePct}% &middot; nominal ${fmt0(r.totalNominal)}</div>
+      ${r.isCurrent?`<div class="note">${fmt(r.effMonthly)}/mo effective</div>`
+        :`<div class="note"><b class="${d<0?'pos':'neg'}">${sgn(d)}</b> &nbsp;<span class="${d<0?'pos':'neg'}">(${d>0?'+':''}${pct.toFixed(1)}%)</span></div>
+          <div class="note">${fmt(r.effMonthly)}/mo effective</div>`}</div>`;
+  });
+  h+='</div>';
+
+  h+=`<h3>Comparison — all scenarios over ${esc(state.glob.windowStart)} to ${esc(state.glob.windowEnd)}</h3>
+    <div class="scroll"><table><thead><tr>
+    <th>Scenario</th><th>Effective</th><th>Covers to</th><th>Rent at effective date</th>
+    <th class="n">Interim PV</th><th class="n">Post-effective PV</th><th class="n">Total PV</th>
+    <th class="n">Total nominal</th><th class="n">Δ PV</th><th class="n">Δ %</th>
+    <th class="n">Eff. monthly (PV)</th><th class="n">Δ monthly</th></tr></thead><tbody>`;
+  results.forEach(r=>{
+    const d=r.totalPV-c.totalPV, pct=c.totalPV?d/c.totalPV*100:0, dm=r.effMonthly-c.effMonthly;
+    let rentCell='—';
+    if(!r.isCurrent){
+      const nr=r.regimes[r.regimes.length-1].baseRate, at=r.rateAtEff;
+      rentCell=fmt(nr)+'/mo';
+      if(at!=null&&at>0) rentCell+=` <span style="color:var(--muted)">(then-current ${fmt(at)}, ${nr>=at?'+':''}${((nr/at-1)*100).toFixed(1)}%)</span>`;
+    }
+    const short = r.coverageEnd < addDays(pd(state.glob.windowEnd),1);
+    h+=`<tr><td><b>${esc(r.label)}</b>${r.isCurrent?' <span class="badge">baseline</span>':''}${r.usesAssumption?' <span class="assume">CPI assumed</span>':''}</td>
+      <td>${r.isCurrent?'—':esc(r.src.effectiveDate)}</td>
+      <td>${fd(addDays(r.coverageEnd,-1))}${short?' <span class="badge grey">short</span>':''}${r.isCurrent&&r.assumedPV?' <span class="assume">continued</span>':''}</td>
+      <td>${rentCell}</td>
+      <td class="n">${r.isCurrent?'—':fmt(r.interimPV)}</td>
+      <td class="n">${r.isCurrent?fmt(r.totalPV):fmt(r.newPV)}</td>
+      <td class="n"><b>${fmt(r.totalPV)}</b></td>
+      <td class="n">${fmt(r.totalNominal)}</td>
+      <td class="n ${r.isCurrent?'':(d<0?'pos':'neg')}">${r.isCurrent?'—':sgn(d)}</td>
+      <td class="n ${r.isCurrent?'':(d<0?'pos':'neg')}">${r.isCurrent?'—':(d>0?'+':'')+pct.toFixed(1)+'%'}</td>
+      <td class="n">${fmt(r.effMonthly)}</td>
+      <td class="n ${r.isCurrent?'':(dm<0?'pos':'neg')}">${r.isCurrent?'—':sgn(dm)}</td></tr>`;
+  });
+  if(cont && c.assumedPV){
+    h+=`<tr style="background:var(--interim)"><td colspan="6" style="font-style:italic">
+      of which baseline continuation past ${esc(state.current.termEnd)} <span class="assume">assumption</span></td>
+      <td class="n">${fmt(c.assumedPV)}</td><td class="n">${fmt(c.assumedNominal)}</td><td colspan="4"></td></tr>`;
+  }
+  h+='</tbody></table></div>';
+  h+=`<p class="legend">Negative Δ = cheaper than doing nothing. <b>Δ monthly</b> is the like-for-like figure — it divides out the span, so it stays readable when totals run to seven figures.
+     A <span class="badge grey">short</span> marker means that scenario's obligation ends before the window does, so its total covers less time than the others.
+     PV discounted at ${state.glob.discountRatePct}% to ${esc(state.glob.pvReferenceDate||state.glob.windowStart)}.</p>`;
+  return h;
+}
+
+function viewBridge(){
+  const c=results[0];
+  if(results.length<2) return '<p class="hint">Add a proposal to see the bridge.</p>';
+  let h='<p class="legend" style="margin-bottom:14px">Because the current lease governs until each effective date, the interim period is common to both sides and nets to zero — unless the amendment date splits a payment period. Everything that actually differs sits in the post-effective row.</p>';
+  h+='<div class="scroll"><table><thead><tr><th>Scenario</th><th>Component</th><th>Period</th>'
+    +'<th class="n">Current lease PV</th><th class="n">Proposal PV</th><th class="n">Δ PV</th></tr></thead><tbody>';
+  results.filter(r=>!r.isCurrent).forEach(r=>{
+    const eff=esc(r.src.effectiveDate);
+    h+=`<tr class="interim"><td rowspan="3"><b>${esc(r.label)}</b></td><td><span class="badge interim">interim</span> Current terms continue</td>
+      <td>to ${eff}</td><td class="n">${fmt(r.curInterimPV)}</td><td class="n">${fmt(r.interimPV)}</td>
+      <td class="n ${Math.abs(r.dInterimPV)<0.005?'':(r.dInterimPV<0?'pos':'neg')}">${Math.abs(r.dInterimPV)<0.005?'0.00':sgn(r.dInterimPV)}</td></tr>`;
+    h+=`<tr><td>Negotiated terms</td><td>from ${eff}</td>
+      <td class="n">${fmt(r.curTailPV)}</td><td class="n">${fmt(r.newPV)}</td>
+      <td class="n ${r.dTailPV<0?'pos':'neg'}">${sgn(r.dTailPV)}</td></tr>`;
+    const tot=r.totalPV-c.totalPV;
+    h+=`<tr class="total"><td>Total</td><td>full window</td>
+      <td class="n">${fmt(c.totalPV)}</td><td class="n">${fmt(r.totalPV)}</td>
+      <td class="n ${tot<0?'pos':'neg'}">${sgn(tot)}</td></tr>`;
+  });
+  h+='</tbody></table></div>';
+
+  const split=results.filter(r=>!r.isCurrent&&Math.abs(r.dInterimPV)>=0.005);
+  if(split.length) h+=`<p class="legend"><b>Non-zero interim delta.</b> ${split.map(r=>esc(r.label)).join(', ')} take effect part-way through a payment period, so the period spanning the effective date is treated differently under the two documents. That difference is a real transition cost, not a modeling artifact — check how the amendment says the changeover period is handled.</p>`;
+
+  const others=results.filter(r=>!r.isCurrent&&r.cfPV!=null);
+  if(others.length){
+    h+='<h3 style="margin-top:22px">Convention decomposition</h3><div class="scroll"><table><thead><tr>'
+      +'<th>Scenario</th><th class="n">Δ PV total</th><th class="n">Rate-driven</th><th class="n">Convention-driven</th><th>Change</th></tr></thead><tbody>';
+    others.forEach(r=>{
+      const tot=r.totalPV-c.totalPV, conv=r.totalPV-r.cfPV, rate=tot-conv;
+      const same=r.src.prorationBasis===state.current.prorationBasis&&r.src.prorationConvention===state.current.prorationConvention;
+      h+=`<tr><td><b>${esc(r.label)}</b></td><td class="n ${tot<0?'pos':'neg'}">${sgn(tot)}</td>
+        <td class="n">${sgn(rate)}</td><td class="n">${Math.abs(conv)<0.005?'—':sgn(conv)}</td>
+        <td>${same?'<span style="color:var(--muted)">unchanged from current lease</span>'
+          :esc(BASIS[r.src.prorationBasis]+' / '+CONV[r.src.prorationConvention])}</td></tr>`;
+    });
+    h+='</tbody></table></div><p class="legend">Convention-driven is the part of the delta produced by changing how partial periods are prorated rather than by changing rent. Real money, but not a rate concession — worth separating when framing the negotiation.</p>';
+  }
+  return h;
+}
+
+function viewAnnual(){
+  const c=results[0];
+  const years=[...new Set(results.flatMap(r=>r.annual.map(a=>a.year)))].sort();
+  let h='<div class="scroll"><table><thead><tr><th>Year</th>';
+  results.forEach(r=>h+=`<th class="n">${esc(r.label)} nominal</th><th class="n">${esc(r.label)} PV</th>`);
+  results.filter(r=>!r.isCurrent).forEach(r=>h+=`<th class="n">Δ PV: ${esc(r.label)}</th>`);
+  h+='</tr></thead><tbody>';
+  years.forEach(y=>{
+    h+=`<tr><td><b>${y}</b></td>`;
+    results.forEach(r=>{ const a=r.annual.find(x=>x.year===y);
+      h+=`<td class="n">${a?fmt(a.nominal):'—'}</td><td class="n">${a?fmt(a.pv):'—'}</td>`; });
+    results.filter(r=>!r.isCurrent).forEach(r=>{
+      const a=r.annual.find(x=>x.year===y), ab=c.annual.find(x=>x.year===y);
+      const d=(a?a.pv:0)-(ab?ab.pv:0);
+      h+=`<td class="n ${Math.abs(d)<0.005?'':(d<0?'pos':'neg')}">${Math.abs(d)<0.005?'0.00':sgn(d)}</td>`; });
+    h+='</tr>';
+  });
+  h+='<tr class="total"><td>Total</td>';
+  results.forEach(r=>h+=`<td class="n">${fmt(r.totalNominal)}</td><td class="n">${fmt(r.totalPV)}</td>`);
+  results.filter(r=>!r.isCurrent).forEach(r=>{const d=r.totalPV-c.totalPV;
+    h+=`<td class="n ${d<0?'pos':'neg'}">${sgn(d)}</td>`;});
+  h+='</tr></tbody></table></div><p class="legend">Years before an effective date show a zero delta — the two documents are identical there.</p>';
+  return h;
+}
+
+function viewSchedule(){
+  let h='<div class="scroll"><table><thead><tr><th>Scenario</th><th>Terms</th><th>Pay date</th><th>Period</th>'
+    +'<th class="n">Days</th><th class="n">Monthly rate</th><th>Treatment</th>'
+    +'<th class="n">Accrued</th><th class="n">Payment</th><th class="n">Disc. factor</th><th class="n">PV</th><th>In window</th></tr></thead><tbody>';
+  results.forEach(r=>r.rows.forEach(p=>{
+    h+=`<tr class="${p.kind==='interim'&&!r.isCurrent?'interim':''}" style="${p.inWindow?'':'opacity:.42'}">
+      <td>${esc(r.label)}</td>
+      <td>${p.assumed?'<span class="assume">continued</span>':(r.isCurrent?'Current':(p.kind==='interim'?'<span class="badge interim">interim</span>':'<span class="badge">new</span>'))}</td>
+      <td>${fd(p.payDate)}</td>
+      <td>${p.oneTime?'—':fd(p.periodStart)+' → '+fd(p.periodEnd)}</td>
+      <td class="n">${p.oneTime?'—':p.days}</td>
+      <td class="n">${p.oneTime?'—':fmt(p.rate)}</td>
+      <td>${esc(p.basisNote)}${p.stub?' <span class="badge grey">stub</span>':''}</td>
+      <td class="n">${p.oneTime?'—':fmt(p.accrued)}</td>
+      <td class="n"><b>${fmt(p.amount)}</b></td>
+      <td class="n">${p.discountFactor.toFixed(6)}</td>
+      <td class="n">${fmt(p.pv)}</td>
+      <td>${p.inWindow?'yes':'excluded'}</td></tr>`;
+  }));
+  h+='</tbody></table></div><p class="legend">Shaded rows are the interim period, where the proposal is still running on current-lease terms. Greyed rows fall outside the window and are excluded from totals.</p>';
+  return h;
+}
+
+function viewRates(){
+  let h='<div class="scroll"><table><thead><tr><th>Scenario</th><th>Terms</th><th>Effective date</th>'
+    +'<th class="n">Monthly rate</th><th class="n">Annualized</th><th class="n">Change</th><th>Source</th></tr></thead><tbody>';
+  results.forEach(r=>{
+    let prev=null;
+    r.events.forEach(e=>{
+      h+=`<tr class="${e.kind==='interim'&&!r.isCurrent?'interim':''}"><td>${esc(r.label)}</td>
+        <td>${(r.cEndOrig&&e.kind==='interim'&&e.date>=r.cEndOrig)?'<span class="assume">continued</span>':(r.isCurrent?'Current':(e.kind==='interim'?'interim':'new'))}</td>
+        <td>${fd(e.date)}${e.date.getUTCDate()!==1?' <span class="badge grey">mid-month</span>':''}</td>
+        <td class="n">${fmt(e.rate)}</td><td class="n">${fmt(e.rate*12)}</td>
+        <td class="n">${prev?sgn(e.rate-prev)+' ('+((e.rate/prev-1)*100).toFixed(2)+'%)':'—'}</td>
+        <td>${esc(e.note)}${e.assumed?' <span class="assume">assumption</span>':''}</td></tr>`;
+      prev=e.rate;
+    });
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
+/* ---------- sensitivity bands ----------
+   Stress the input the same distance in both directions. An asymmetric band
+   is not a neutral test: probing further above the centre than below makes a
+   result look robust when it has only been pushed the way that happens to
+   support it. Discounting is the case that matters here — raising the rate
+   under-weights distant rent and flatters back-loaded escalators, so a band
+   that reaches further up than down quietly argues for the landlord's
+   structure.
+
+   Rates cannot go below zero, so a low centre still yields a lopsided band.
+   Rather than silently present that as balanced, the truncation is reported
+   in the legend.                                                            */
+function sensBand(centre,step,steps){
+  const wanted=[]; for(let i=-steps;i<=steps;i++) wanted.push(+(centre+i*step).toFixed(4));
+  const points=[...new Set(wanted.filter(v=>v>=0))].sort((a,b)=>a-b);
+  return {points, truncated:wanted.some(v=>v<0)};
+}
+const BAND_NOTE=' The band is capped at 0% on the low side, so it is not symmetric about the current value — read the downside with that in mind.';
+
+function viewSensitivity(){
+  const g=engineGlob(), C=normLease(state.current);
+  if(!state.proposals.length) return '<p class="hint">Add a proposal to run sensitivity.</p>';
+  const bp=Number(state.glob.discountRatePct)||0;
+  const rateBand=sensBand(bp,1.5,2), rates=rateBand.points;
+  const run=(gg,p)=>computeScenario(C,p?normProp(p):null,gg);
+
+  let h='<h3>Discount rate</h3><div class="scroll"><table><thead><tr><th>Rate</th><th class="n">Current PV</th>';
+  state.proposals.forEach(p=>h+=`<th class="n">${esc(p.label)} PV</th><th class="n">Δ PV</th>`);
+  h+='</tr></thead><tbody>';
+  const flips=new Set();
+  rates.forEach(rp=>{
+    const gg=Object.assign({},g,{discountRate:rp/100});
+    const cc=run(gg,null);
+    h+=`<tr${rp===bp?' style="background:var(--accent-soft);font-weight:600"':''}><td>${rp.toFixed(2)}%${rp===bp?' (current)':''}</td><td class="n">${cc?fmt(cc.totalPV):'—'}</td>`;
+    state.proposals.forEach(p=>{ const x=run(gg,p);
+      const d=x&&cc?x.totalPV-cc.totalPV:null;
+      if(d!=null) flips.add(Math.sign(d));
+      h+=`<td class="n">${x?fmt(x.totalPV):'—'}</td><td class="n ${d<0?'pos':'neg'}">${d==null?'—':sgn(d)}</td>`; });
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  h+=`<p class="legend">Tested &plusmn;3.00 points around ${bp.toFixed(2)}%, in 1.50-point steps.${rateBand.truncated?BAND_NOTE:''} ${flips.size>1?'<b>The sign of the delta flips across the tested discount rates.</b> Whether the proposal beats the current lease depends on your cost of capital — state the rate alongside any recommendation.':'The direction of the result is stable across all tested discount rates.'}</p>`;
+
+  const anyCpi=[state.current,...state.proposals].some(s=>(s.escalators||[]).some(e=>e.type==='cpi'));
+  if(anyCpi){
+    const bc=Number(state.glob.assumedCpiPct)||0;
+    const cpiBand=sensBand(bc,1.5,2), cps=cpiBand.points;
+    h+='<h3 style="margin-top:22px">Assumed CPI <span class="assume">assumption</span></h3><div class="scroll"><table><thead><tr><th>CPI</th><th class="n">Current PV</th>';
+    state.proposals.forEach(p=>h+=`<th class="n">${esc(p.label)} PV</th><th class="n">Δ PV</th>`);
+    h+='</tr></thead><tbody>';
+    cps.forEach(cp=>{
+      const gg=Object.assign({},g,{assumedCpi:cp/100});
+      const cc=run(gg,null);
+      h+=`<tr${cp===bc?' style="background:var(--accent-soft);font-weight:600"':''}><td>${cp.toFixed(2)}%${cp===bc?' (current)':''}</td><td class="n">${cc?fmt(cc.totalPV):'—'}</td>`;
+      state.proposals.forEach(p=>{ const x=run(gg,p);
+        const d=x&&cc?x.totalPV-cc.totalPV:null;
+        h+=`<td class="n">${x?fmt(x.totalPV):'—'}</td><td class="n ${d<0?'pos':'neg'}">${d==null?'—':sgn(d)}</td>`; });
+      h+='</tr>';
+    });
+    h+=`</tbody></table></div><p class="legend">Tested &plusmn;3.00 points around ${bc.toFixed(2)}%, in 1.50-point steps.${cpiBand.truncated?BAND_NOTE:''} CPI-linked results are assumptions, not forecasts. Report the range.</p>`;
+  }
+
+  h+='<h3 style="margin-top:22px">Compounding basis</h3><div class="scroll"><table><thead><tr><th>Basis</th><th class="n">Current PV</th>';
+  state.proposals.forEach(p=>h+=`<th class="n">${esc(p.label)} PV</th><th class="n">Δ PV</th>`);
+  h+='</tr></thead><tbody>';
+  [['on_prior','Compound on prior'],['on_base','Simple on base']].forEach(([k,lbl])=>{
+    const C2=JSON.parse(JSON.stringify(state.current)); (C2.escalators||[]).forEach(e=>e.compounding=k);
+    const cc=computeScenario(normLease(C2),null,g);
+    h+=`<tr><td>${lbl}</td><td class="n">${cc?fmt(cc.totalPV):'—'}</td>`;
+    state.proposals.forEach(p=>{
+      const P2=JSON.parse(JSON.stringify(p)); (P2.escalators||[]).forEach(e=>e.compounding=k);
+      const x=computeScenario(normLease(C2),normProp(P2),g);
+      const d=x&&cc?x.totalPV-cc.totalPV:null;
+      h+=`<td class="n">${x?fmt(x.totalPV):'—'}</td><td class="n ${d<0?'pos':'neg'}">${d==null?'—':sgn(d)}</td>`; });
+    h+='</tr>';
+  });
+  h+='</tbody></table></div><p class="legend">Applied to both documents at once. Where lease language is ambiguous about whether increases compound on prior rent or apply simply to the original base, report this range rather than picking one.</p>';
+
+  /* breakeven */
+  h+='<h3 style="margin-top:22px">Breakeven</h3><div class="scroll"><table><thead><tr>'
+    +'<th>Proposal</th><th class="n">Δ PV now</th><th class="n">Equalizing lump sum at effective date</th>'
+    +'<th class="n">Breakeven rent at effective date</th><th class="n">Breakeven escalator</th></tr></thead><tbody>';
+  const cc=run(g,null);
+  state.proposals.forEach(p=>{
+    const x=run(g,p); if(!x||!cc) return;
+    const d=x.totalPV-cc.totalPV;
+    const eff=pd(p.effectiveDate);
+    const dfEff=Math.pow(1+g.discountRate,-(dayDiff(pd(g.pvReferenceDate)||pd(g.windowStart),eff)/365));
+    /* breakeven starting rent (absolute mode only) */
+    let beRent='—';
+    if(p.rentMode==='absolute'){
+      const f=v=>{ const q=Object.assign({},p,{rentValue:v}); const r=run(g,q); return r?r.totalPV-cc.totalPV:null; };
+      let lo=0,hi=Math.max(Number(p.rentValue)||0,1)*6||1e5;
+      if(f(lo)!=null&&f(hi)!=null&&f(lo)*f(hi)<0){
+        for(let i=0;i<70;i++){ const m=(lo+hi)/2; if(f(lo)*f(m)<=0) hi=m; else lo=m; }
+        beRent=fmt((lo+hi)/2);
+      }
+    }
+    let beEsc='—';
+    const hasPct=(p.escalators||[]).some(e=>e.type==='fixed_pct');
+    if(hasPct){
+      const f=v=>{ const q=JSON.parse(JSON.stringify(p)); (q.escalators||[]).forEach(e=>{ if(e.type==='fixed_pct') e.ratePct=v; });
+        const r=run(g,q); return r?r.totalPV-cc.totalPV:null; };
+      let lo=-10,hi=30;
+      if(f(lo)!=null&&f(hi)!=null&&f(lo)*f(hi)<0){
+        for(let i=0;i<60;i++){ const m=(lo+hi)/2; if(f(lo)*f(m)<=0) hi=m; else lo=m; }
+        beEsc=((lo+hi)/2).toFixed(3)+'%';
+      } else beEsc='<span style="color:var(--muted)">no crossing −10…30%</span>';
+    }
+    h+=`<tr><td><b>${esc(p.label)}</b></td><td class="n ${d<0?'pos':'neg'}">${sgn(d)}</td>
+      <td class="n">${sgn(-d/dfEff)}</td><td class="n">${beRent}</td><td class="n">${beEsc}</td></tr>`;
+  });
+  h+='</tbody></table></div><p class="legend">The equalizing lump sum is expressed in effective-date dollars. Breakeven rent solves for the starting rent at the effective date that makes the proposal PV-neutral against the current lease (stated-amount pricing only). Breakeven escalator adjusts every fixed-percent escalator in the proposal together — indicative when a proposal has more than one.</p>';
+  return h;
+}
+
+/* ==========================================================================
+   IMPORT / EXPORT / DEFAULTS
+   ========================================================================== */
+function dl(name,text,mime){ const b=new Blob([text],{type:mime||'text/plain;charset=utf-8'});
+  const u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(u);a.remove();},400); }
+function qq(v){ v=v==null?'':String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function toCSV(rows){ return rows.map(r=>r.map(qq).join(',')).join('\r\n'); }
+
+/* Site name leads the filename so saved projects sort by site in a folder, with
+   the date second to keep successive rounds of the same negotiation together
+   and in order. Falls back to the old name when nothing has been entered. */
+function projectFilename(ext,part){
+  const s=slug(state.glob.projectName)||'lease-comparison';
+  return s+(part?'-'+part:'')+'-'+new Date().toISOString().slice(0,10)+'.'+ext;
+}
+function saveProject(){ state.schemaVersion=SCHEMA_VERSION;
+  dl(projectFilename('json'),JSON.stringify(state,null,2),'application/json'); }
+/* ---------- project file validation ----------
+   A hand-edited project file is a supported workflow: Save Project produces a
+   known-good exemplar, and editing values in it is far less error-prone than
+   assembling the four CSVs and keeping their `owner` foreign keys consistent.
+
+   The failure modes differ, though. A JSON *syntax* error already fails loudly
+   — JSON.parse throws with a position. A *semantic* one did not: writing
+   "Advance" for "advance", or "fixed%" for "fixed_pct", used to load silently,
+   leave the dropdown showing nothing, and let the engine treat the field as
+   unset. That is the worst kind of wrong, because the numbers still compute.
+
+   So every enumerated field is checked against the same vocabulary the UI
+   offers, dates against yyyy-mm-dd, and numerics for parseability. Problems are
+   collected and reported together rather than one per attempt — a hand-edited
+   file usually has several, and fixing them one reload at a time is miserable.  */
+/* ENUMS and validateProject() now live in src/lease-validate.js so tests can
+   exercise the malformed-input path directly. */
+function openProject(inp){ const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const o=JSON.parse(r.result);
+      if(!o.glob||!o.current||!o.proposals) throw new Error('Not a project file from this tool.');
+      const v=validateProject(o);
+      /* Errors block; warnings do not. A file from a newer version carrying
+         fields this build ignores should still open — a misspelled field that
+         would silently take a default should not. */
+      if(v.errors.length) throw new Error('the file loaded but contains '+v.errors.length+' problem'+(v.errors.length>1?'s':'')+
+        ' that would change the numbers:\n\n'+v.errors.slice(0,15).join('\n\n')+(v.errors.length>15?`\n\n…and ${v.errors.length-15} more.`:'')+
+        '\n\nNothing was changed. Fix these and load again.');
+      state=o; state.current.escalators=state.current.escalators||[]; state.current.oneTimePayments=state.current.oneTimePayments||[];
+      state.proposals.forEach(p=>{p.escalators=p.escalators||[];p.oneTimePayments=p.oneTimePayments||[];});
+      state.schemaVersion=SCHEMA_VERSION;
+      renderAll();
+      if(v.warnings.length){
+        /* Warnings are shown where they cannot be dismissed by reflex — the
+           validation panel keeps them on screen next to the results. */
+        loadWarnings=v.warnings; calc();
+        toast('Project loaded with '+v.warnings.length+' note'+(v.warnings.length>1?'s':'')+' — see Validation.');
+      } else { loadWarnings=[]; toast('Project loaded.'); }
+    }catch(e){ alert('Could not read that file: '+e.message); } inp.value=''; };
+  r.readAsText(f); }
+
+
+function exportCSV(kind){
+  if(!results.length){ alert('Nothing to export — resolve validation errors first.'); return; }
+  const c=results[0];
+  const meta=[['Negotiation / site',state.glob.projectName||'(unnamed)'],
+    ['Analysis window',state.glob.windowStart+' to '+state.glob.windowEnd],
+    ['Discount rate',state.glob.discountRatePct+'%'],
+    ['PV reference date',state.glob.pvReferenceDate||state.glob.windowStart],
+    ['Assumed CPI',state.glob.assumedCpiPct+'% (assumption)'],
+    ['Structure','Proposals are amendments; current lease terms govern until each effective date'],
+    ['Current lease','Assumed in force at the window start; base rent is the rent payable on that date'],
+    ['Baseline',(state.glob.baselineMode||'continue')==='expire'
+      ?'Current lease obligation ends at its stated expiry'
+      :'Current lease terms assumed to continue past expiry to the window end (assumption)'],
+    ['Generated',new Date().toISOString()],[]];
+  let rows=[];
+  if(kind==='summary'){
+    rows=[...meta,['Scenario','Type','Effective date','Obligation ends','Rent at effective date',
+      'Rent under current lease at that date','Cadence (mo)','Timing','Proration basis','Proration convention',
+      'Payments','Interim nominal','Interim PV','Post-effective nominal','Post-effective PV',
+      'Total nominal','Total PV','Delta PV vs current','Delta PV %','Delta PV interim','Delta PV post-effective',
+      'Effective monthly PV','Delta effective monthly','Of which continuation assumption (nominal)','Of which continuation assumption (PV)']];
+    results.forEach(r=>{
+      const s=r.src, isC=r.isCurrent;
+      rows.push([r.label,isC?'Current lease':'Proposal (amendment)',
+        isC?'':s.effectiveDate, fd(addDays(r.coverageEnd,-1)),
+        isC?'':(r.regimes[r.regimes.length-1].baseRate).toFixed(2),
+        isC?'':(r.rateAtEff!=null?r.rateAtEff.toFixed(2):''),
+        s.cadenceMonths,s.paymentTiming,BASIS[s.prorationBasis],CONV[s.prorationConvention],
+        r.paymentCount,
+        isC?'':r.interimNominal.toFixed(2), isC?'':r.interimPV.toFixed(2),
+        isC?r.totalNominal.toFixed(2):r.newNominal.toFixed(2),
+        isC?r.totalPV.toFixed(2):r.newPV.toFixed(2),
+        r.totalNominal.toFixed(2),r.totalPV.toFixed(2),
+        isC?'':(r.totalPV-c.totalPV).toFixed(2),
+        isC?'':(c.totalPV?((r.totalPV-c.totalPV)/c.totalPV*100).toFixed(2):''),
+        isC?'':r.dInterimPV.toFixed(2), isC?'':r.dTailPV.toFixed(2),
+        r.effMonthly.toFixed(2), isC?'':(r.effMonthly-c.effMonthly).toFixed(2),
+        r.assumedNominal?r.assumedNominal.toFixed(2):'', r.assumedPV?r.assumedPV.toFixed(2):'']); });
+  }
+  if(kind==='annual'){
+    rows=[...meta,['Scenario','Year','Payments','Nominal','PV','Interim PV','Post-effective PV','Continuation-assumption PV','Delta PV vs current']];
+    results.forEach(r=>r.annual.forEach(a=>{
+      const ab=c.annual.find(x=>x.year===a.year);
+      rows.push([r.label,a.year,a.count,a.nominal.toFixed(2),a.pv.toFixed(2),
+        a.interimPV.toFixed(2),a.newPV.toFixed(2),(a.assumedPV||0).toFixed(2),
+        r.isCurrent?'':(a.pv-(ab?ab.pv:0)).toFixed(2)]); }));
+  }
+  if(kind==='schedule'){
+    rows=[...meta,['Scenario','Terms in force','Payment date','Period start','Period end','Days',
+      'Monthly rate','Treatment','Stub','Accrued','Payment','Discount factor','PV','In window']];
+    results.forEach(r=>r.rows.forEach(p=>rows.push([r.label,
+      p.assumed?'Current lease (continuation assumption)':(r.isCurrent?'Current lease':(p.kind==='interim'?'Current lease (interim)':'Proposal')),
+      fd(p.payDate),
+      p.oneTime?'':fd(p.periodStart),p.oneTime?'':fd(p.periodEnd),p.oneTime?'':p.days,
+      p.oneTime?'':p.rate.toFixed(2),p.basisNote,p.stub?'yes':'',
+      p.oneTime?'':p.accrued.toFixed(2),p.amount.toFixed(2),p.discountFactor.toFixed(8),
+      p.pv.toFixed(2),p.inWindow?'yes':'no'])));
+  }
+  if(kind==='segments'){
+    rows=[...meta,['Scenario','Terms in force','Segment start','Segment end','Days','Monthly rate','Convention','Accrued']];
+    results.forEach(r=>r.segRows.forEach(s=>rows.push([r.label,
+      r.isCurrent?'Current lease':(s.kind==='interim'?'Current lease (interim)':'Proposal'),
+      fd(s.start),fd(s.end),s.days,s.rate.toFixed(4),
+      CONV[s.kind==='interim'?state.current.prorationConvention:r.src.prorationConvention]||'',
+      s.accrual.toFixed(4)])));
+  }
+  dl(projectFilename('csv',kind),toCSV(rows),'text/csv;charset=utf-8');
+}
+function copyTSV(){
+  if(!results.length) return;
+  const lines=[['Scenario','Terms in force','Payment date','Period start','Period end','Days','Monthly rate','Treatment','Accrued','Payment','PV'].join('\t')];
+  results.forEach(r=>r.rows.forEach(p=>lines.push([r.label,
+    p.assumed?'Current lease (continued)':(r.isCurrent?'Current lease':(p.kind==='interim'?'Current lease (interim)':'Proposal')),
+    fd(p.payDate),p.oneTime?'':fd(p.periodStart),p.oneTime?'':fd(p.periodEnd),p.oneTime?'':p.days,
+    p.oneTime?'':p.rate.toFixed(2),p.basisNote,p.oneTime?'':p.accrued.toFixed(2),
+    p.amount.toFixed(2),p.pv.toFixed(2)].join('\t'))));
+  const txt=lines.join('\n');
+  (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject())
+    .then(()=>toast('Schedule copied — paste directly into Excel.'))
+    .catch(()=>{ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); ta.remove(); toast('Schedule copied.'); });
+}
+
+function saveDefaults(){
+  const t=JSON.parse(JSON.stringify(state.current));
+  ['termEnd','baseRent','firstPaymentDate'].forEach(k=>t[k]='');
+  t.escalators=(t.escalators||[]).map(e=>Object.assign({},e,{appliesFrom:'',appliesTo:'',firstAdjustment:''}));
+  t.oneTimePayments=[];
+  /* projectName is cleared alongside the dates: defaults describe how you model,
+     not which site you were looking at when you saved them. */
+  const d={glob:Object.assign({},state.glob,{projectName:'',windowStart:'',windowEnd:'',pvReferenceDate:''}),template:t};
+  try{ localStorage.setItem(DKEY,JSON.stringify(d));
+    toast('Defaults saved on this machine — discount rate, CPI, cadence, timing, proration and escalator structure. New leases and proposals inherit them.');
+  }catch(e){ dl('lease-defaults.json',JSON.stringify(d,null,2),'application/json');
+    toast('Browser storage unavailable — defaults downloaded as a file instead.'); }
+}
+function applyDefaults(explicit){
+  let d=null; try{ d=JSON.parse(localStorage.getItem(DKEY)||'null'); }catch(e){}
+  if(!d){ if(explicit) alert('No saved defaults on this machine. Set your preferred settings, then click "Save as Defaults".'); return false; }
+  ['discountRatePct','assumedCpiPct','baselineMode'].forEach(k=>{ if(d.glob&&d.glob[k]!==undefined&&d.glob[k]!=='') state.glob[k]=d.glob[k]; });
+  const keys=['rentBasis','cadenceMonths','paymentTiming','prorationBasis','prorationConvention','paymentDayRule'];
+  if(d.template){
+    keys.forEach(k=>{ if(d.template[k]!==undefined) state.current[k]=d.template[k]; });
+    if(!(state.current.escalators||[]).length && (d.template.escalators||[]).length)
+      state.current.escalators=JSON.parse(JSON.stringify(d.template.escalators));
+    state.proposals.forEach(p=>keys.forEach(k=>{ if(d.template[k]!==undefined) p[k]=d.template[k]; }));
+  }
+  renderAll(); if(explicit) toast('Defaults applied.');
+  return true;
+}
+function resetAll(){ if(!confirm('Clear the lease, all proposals and settings? Saved defaults are kept.')) return;
+  state=freshState(); loadWarnings=[]; applyDefaults(false); renderAll(); }
+function toast(m){ const d=document.createElement('div'); d.textContent=m; d.className='toast';
+  document.body.appendChild(d); setTimeout(()=>d.remove(),5200); }
+
+/* ---------- admin mode ----------
+   "Load Example" is useful for training and for sanity-checking a change, but
+   it silently replaces whatever is on screen. It is hidden unless admin mode is
+   on: Ctrl+Shift+A toggles it, or open the file with ?admin=1 in the URL.     */
+const AKEY='leaseComparator_adminMode';
+function setAdmin(on,announce){
+  document.body.classList.toggle('admin',!!on);
+  try{ on?localStorage.setItem(AKEY,'1'):localStorage.removeItem(AKEY); }catch(e){}
+  if(announce) toast(on
+    ? 'Admin mode on — Save/Load Defaults, Load Example and the light/dark theme switch are in the toolbar. Ctrl+Shift+A turns it off.'
+    : 'Admin mode off — Save/Load Defaults, Load Example and the theme switch hidden. Saved defaults still apply to new projects; the current theme stays as it is.');
+}
+function toggleAdmin(){ setAdmin(!document.body.classList.contains('admin'),true); }
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.shiftKey&&(e.key==='A'||e.key==='a')){ e.preventDefault(); toggleAdmin(); }
+});
+(function(){ let on=false;
+  try{ on=localStorage.getItem(AKEY)==='1'; }catch(e){}
+  if(/[?&]admin=1(&|$)/.test(location.search)) on=true;
+  if(on) document.body.classList.add('admin');
+})();
+
+/* ---------- theme (admin only) ----------
+   Dark is the product default: the tool is read for long stretches under
+   office lighting and the numbers carry better on a dark ground. Light mode
+   stays available for anyone who wants it, but it is deliberately tucked
+   behind admin mode rather than sitting in the main toolbar, so a casual user
+   cannot flip the house style mid-negotiation. Printing always forces light —
+   see the @media print block — so the theme never affects a paper copy.
+
+   The choice is stored per machine (not in the project file), so opening
+   someone else's saved project does not drag their theme along with it. The
+   initial paint happens in a tiny script in <head>, before any CSS is applied,
+   which is what stops a light flash on load for light-mode users.           */
+const TKEY='leaseComparator_theme';
+function currentTheme(){ return document.documentElement.getAttribute('data-theme')==='light'?'light':'dark'; }
+function setTheme(t,announce){
+  const light=t==='light';
+  if(light) document.documentElement.setAttribute('data-theme','light');
+  else document.documentElement.removeAttribute('data-theme');
+  try{ localStorage.setItem(TKEY,light?'light':'dark'); }catch(e){}
+  const b=document.getElementById('themeBtn');
+  if(b){ b.textContent=light?'Dark Mode':'Light Mode';
+         b.title=light?'Switch back to the default dark theme':'Switch to light theme (this machine only)'; }
+  if(announce) toast(light
+    ? 'Light mode on — remembered on this machine only. The button switches back to dark.'
+    : 'Dark mode on — the default theme.');
+}
+function toggleTheme(){ setTheme(currentTheme()==='light'?'dark':'light',true); }
+setTheme(currentTheme(),false);   /* sync the button label with what <head> already painted */
+
+/* ---------- example (admin only) ---------- */
+function loadSample(){
+  if(!confirm('Load the worked example? This replaces the lease, all proposals and settings currently on screen.')) return;
+  /* Built from freshState so the example can never drift out of sync with the
+     glob schema — adding a global field to freshState used to leave this
+     hand-written object missing it. */
+  state=freshState();
+  Object.assign(state.glob,{projectName:'Ridgeview Tower — Site 4412',
+                windowStart:'2026-07-01',windowEnd:'2046-12-31',pvReferenceDate:'2026-07-01',
+                discountRatePct:6.5,assumedCpiPct:3,baselineMode:'continue'});
+  Object.assign(state,{
+    current:{termEnd:'2034-10-31',
+      baseRent:7500,rentBasis:'monthly',cadenceMonths:1,firstPaymentDate:'2026-07-01',
+      paymentTiming:'advance',prorationBasis:'prorated',prorationConvention:'actual_month',
+      escalators:[{appliesFrom:'2026-07-01',appliesTo:'2034-10-31',type:'fixed_pct',ratePct:3,cadenceMonths:12,
+        firstAdjustment:'2027-06-15',compounding:'on_prior',floorPctIn:'',capPctIn:''}],
+      oneTimePayments:[]},
+    proposals:[
+      /* step 2 — what we put to the landlord */
+      {id:'our_offer',label:'Our Proposal (Aug 2026)',
+       effectiveDate:'2027-01-01',rentMode:'pct_of_current',rentValue:85,rentBasis:'monthly',
+       termEnd:'2046-12-31',cadenceMonths:12,firstPaymentDate:'2027-01-01',
+       paymentTiming:'advance',prorationBasis:'prorated',prorationConvention:'actual_month',
+       escalators:[{appliesFrom:'2027-01-01',appliesTo:'2046-12-31',type:'fixed_pct',ratePct:1.5,cadenceMonths:60,
+         firstAdjustment:'2032-01-01',compounding:'on_prior',floorPctIn:'',capPctIn:''}],
+       oneTimePayments:[]},
+      /* step 3 — what came back months later; the second escalator is a
+         one-time step (cadence 0) rather than a recurring one */
+      {id:'ll_counter',label:'Landlord Counter (Nov 2026)',
+       effectiveDate:'2027-04-01',rentMode:'pct_of_current',rentValue:104,rentBasis:'monthly',
+       termEnd:'2046-12-31',cadenceMonths:1,firstPaymentDate:'2027-04-01',
+       paymentTiming:'advance',prorationBasis:'prorated',prorationConvention:'actual_month',
+       escalators:[
+         {appliesFrom:'2027-04-01',appliesTo:'2046-12-31',type:'cpi',ratePct:0,cadenceMonths:12,
+          firstAdjustment:'2028-04-01',compounding:'on_prior',floorPctIn:2,capPctIn:''},
+         {appliesFrom:'2037-01-01',appliesTo:'2037-12-31',type:'fixed_amount',ratePct:500,cadenceMonths:0,
+          firstAdjustment:'2037-01-01',compounding:'on_prior',floorPctIn:'',capPctIn:''}],
+       oneTimePayments:[{label:'Signing consideration',date:'2027-04-01',amount:40000,direction:'to_tenant'}]}
+    ]});
+  renderAll();
+  toast('Example: a lease in force at the window start at 7,500/mo, escalating 3% each 15 June and expiring 2034; our August offer at 85% of then-current rent with a five-yearly 1.5% step; and the landlord\u2019s November counter at 104% with an annual CPI escalator floored at 2%, plus a one-time +500/mo step in 2037 entered as cadence 0. Both extend to 2046, so the baseline assumes the current lease continues past its 2034 expiry.');
+}
+
+state=freshState(); applyDefaults(false); renderAll();
+</script>
+</body>
+</html>

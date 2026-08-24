@@ -1,0 +1,164 @@
+{
+  "$comment": "SOFT relationships between clause subjects: changing a term in one category usually means revisiting another. Distinct from the two HARD relations in clauses.json — `conflictsWith` (mutually exclusive, blocks the document) and `requires` (cross-reference, blocks the document). Nothing here blocks anything.\n\nWHY IT EXISTS. The audit finds problems ONE TERM AT A TIME. A draft trades ACROSS terms. The audit may flag the term length and find nothing wrong with termination — and a first draft proposing a longer term should still put termination rights on the table in the same round, because a longer term without an exit is worse than the shorter one it replaced. Nothing in the audit findings would ever surface that, because there was no finding to surface.\n\nWHY PER CATEGORY. The relationships hold between subjects, not between particular drafting variants: every Term clause implicates termination for the same reason. A per-clause map would be authoring for its own sake and would rot faster than the library.\n\nDIRECTION IS DELIBERATE. A impacting B does not require B to impact A. Changing the rent should raise the escalator every time; changing a recording provision raises title, but changing title does not particularly raise recording.",
+
+  "byCategory": {
+    "term": [
+      { "category": "termination", "because": "A longer term without an exit is worse than the shorter one it replaced. If the draft asks for term, put termination rights on the table in the same round." },
+      { "category": "escalator", "because": "Every additional year is another year of compounding. A term extension changes what the escalator is worth far more than it changes the rent." },
+      { "category": "holdover", "because": "Extending the term moves the holdover boundary, and language written for the old end date may now bite earlier than intended." },
+      { "category": "notices", "because": "The NNR deadline derives from the term end. Moving one moves the other, and missing it forfeits a renewal." }
+    ],
+
+    "termination": [
+      { "category": "removal", "because": "A right to leave is worth what the restoration obligation costs to exercise it." },
+      { "category": "term", "because": "A landlord conceding termination usually wants term in exchange." }
+    ],
+
+    "rent": [
+      { "category": "escalator", "because": "Rent and escalator are one economic package. A reduction with a steeper escalator can be worth less than no reduction at all." },
+      { "category": "term", "because": "Term is the usual currency for a rent reduction — the landlord wants years for dollars." }
+    ],
+
+    "escalator": [
+      { "category": "rent", "because": "The two only mean anything together. Price the package, not the rate." },
+      { "category": "term", "because": "A cap is worth more the longer the term runs, which is why landlords trade one for the other." }
+    ],
+
+
+    "colocation": [
+      { "category": "interference", "because": "More users on the structure is more interference risk. Colocation rights and interference protection must move together, or the first undermines the second." },
+      { "category": "structural", "because": "Every additional user consumes capacity, and capacity is finite before it is expensive." },
+      { "category": "rent", "because": "Revenue share is rent by another name." },
+      { "category": "sublease", "because": "Whether colocation is a sublease or a licence decides which consent standard applies to it." }
+    ],
+
+    "sublease": [
+      { "category": "colocation", "because": "Colocation is usually exercised through the sublease or assignment right, so narrowing one narrows the other." },
+      { "category": "term", "because": "An assignment right matters most where the term is long enough for the business to change hands during it." }
+    ],
+
+    "interference": [
+      { "category": "colocation", "because": "Interference protection is what makes colocation survivable. Strengthening one without the other leaves the exposure open." },
+      { "category": "structural", "because": "Physical obstruction is interference too, and capacity is argued in the same breath more often than not." },
+      { "category": "quiet-enjoyment", "because": "The two overlap, and a landlord conceding one will argue the other already covers it." }
+    ],
+
+    "structural": [
+      { "category": "colocation", "because": "Capacity limits are what a landlord reaches for to refuse a colocation." },
+      { "category": "permitted-use", "because": "Equipment additions are governed by both. A permitted use allowing a change the structure cannot carry is not a right." },
+      { "category": "roof", "because": "Loading, mounting and penetration terms sit across both." }
+    ],
+
+    "permitted-use": [
+      { "category": "structural", "because": "The right to modify equipment is only as good as the capacity to install it." },
+      { "category": "premises", "because": "A wider permitted use often needs more area than the premises describe." },
+      { "category": "colocation", "because": "Whether the use clause covers third-party equipment decides whether colocation needs consent at all." }
+    ],
+
+    "premises": [
+      { "category": "rent", "because": "Where area drives the rate, changing the premises changes the rent." },
+      { "category": "permitted-use", "because": "The area and what may be done in it are read together." },
+      { "category": "structural", "because": "Expansion space and structural capacity are the same question on a tower." }
+    ],
+
+    "access": [
+      { "category": "default-cure", "because": "An access right with no remedy behind it is a statement of intent. The cure period and any liquidated damages are what make it enforceable." },
+      { "category": "utilities", "because": "Utility work needs the same access, and the two are usually granted by one easement." }
+    ],
+
+    "roof": [
+      { "category": "structural", "because": "Roof loading and structural capacity are one engineering question." },
+      { "category": "access", "because": "Roof access is routinely narrower than site access, and escort requirements attach here." },
+      { "category": "relocation", "because": "Rooftop sites are relocated far more often than ground sites." }
+    ],
+
+    "relocation": [
+      { "category": "premises", "because": "A relocation right is an option over the premises description." },
+      { "category": "rent", "because": "Who pays for the move, and whether rent abates during it, is the whole value of the clause." },
+      { "category": "termination", "because": "A relocation the tenant cannot accept should be a termination right rather than a dispute." }
+    ],
+
+    "removal": [
+      { "category": "termination", "because": "Restoration cost is what a termination right costs to exercise." },
+      { "category": "holdover", "because": "Equipment left past the removal window is what triggers holdover in practice." }
+    ],
+
+    "holdover": [
+      { "category": "term", "because": "Holdover governs what happens when the term runs out, so the two are read together." },
+      { "category": "rent", "because": "Holdover rent is usually a multiple, and that multiple is the whole clause." }
+    ],
+
+    "default-cure": [
+      { "category": "termination", "because": "Cure periods decide when a default becomes a termination right." },
+      { "category": "notices", "because": "A cure period runs from notice, so how notice is given decides when it starts." },
+      { "category": "access", "because": "Access failure is the default most likely to need a short cure." }
+    ],
+
+    "insurance": [
+      { "category": "indemnity", "because": "Indemnity is the exposure and insurance is the cover for it. Changing one without the other leaves a gap or pays for nothing." },
+      { "category": "casualty-condemnation", "because": "Who carries the loss depends on both." }
+    ],
+
+    "indemnity": [
+      { "category": "insurance", "because": "An indemnity wider than the policy is an uninsured obligation." },
+      { "category": "environmental", "because": "Environmental indemnities are usually carved out separately and survive termination." }
+    ],
+
+    "environmental": [
+      { "category": "indemnity", "because": "The environmental carve-out is an indemnity term wherever it sits." },
+      { "category": "permitted-use", "because": "What may be stored or operated on site is a use question with an environmental consequence." }
+    ],
+
+    "casualty-condemnation": [
+      { "category": "rent", "because": "Abatement is the operative remedy, and abatement is a rent term." },
+      { "category": "termination", "because": "Casualty and condemnation clauses are termination rights with a trigger attached." },
+      { "category": "insurance", "because": "Who rebuilds depends on who insured it." }
+    ],
+
+    "taxes": [
+      { "category": "rent", "because": "A tax reimbursement is rent that does not look like rent until the invoice arrives." },
+      { "category": "utilities", "because": "Both are pass-throughs and are argued together." }
+    ],
+
+    "utilities": [
+      { "category": "access", "because": "Utility installation and maintenance need access, and the easements are usually granted together." },
+      { "category": "rent", "because": "Submetering and markup are rent by another route." }
+    ],
+
+    "title": [
+      { "category": "recording", "because": "A memorandum is how title protection is made visible to a purchaser." },
+      { "category": "quiet-enjoyment", "because": "Non-disturbance and quiet enjoyment answer the same risk from different directions." },
+      { "category": "term", "because": "Subordination matters most across a long term, because that is where a foreclosure has time to happen." }
+    ],
+
+    "recording": [
+      { "category": "title", "because": "Recording without non-disturbance records a lease a foreclosure can still extinguish." },
+      { "category": "term", "because": "The memorandum states the term, so a term change means re-recording." }
+    ],
+
+    "quiet-enjoyment": [
+      { "category": "interference", "because": "Quiet enjoyment is the general form of the interference promise." },
+      { "category": "title", "because": "It is worth exactly what the landlord's title is worth." }
+    ],
+
+    "rofr": [
+      { "category": "title", "because": "A right of first refusal is a title interest, argued alongside subordination and recording." },
+      { "category": "rent", "because": "A rental-stream ROFR is about who receives the rent, not who owns the land." }
+    ],
+
+    "liens": [
+      { "category": "title", "because": "Lien waivers and title warranties are the same protection at different depths." },
+      { "category": "removal", "because": "A landlord lien on the equipment is what stops it leaving." }
+    ],
+
+    "notices": [
+      { "category": "default-cure", "because": "Every cure period runs from a notice given under this clause." },
+      { "category": "term", "because": "The NNR deadline is a notice obligation, and missing it forfeits a renewal." }
+    ],
+
+    "compliance": [
+      { "category": "permitted-use", "because": "Compliance obligations become use restrictions the moment a regulator changes its mind." },
+      { "category": "structural", "because": "FAA and FCC obligations attach to the structure as much as to the operator." }
+    ]
+  }
+}

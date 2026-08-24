@@ -1,0 +1,84 @@
+# =============================================================================
+# Confidentiality first.
+#
+# Real lease data must never reach this repo or its history: no client rents,
+# addresses, party names, site names, FANs, or executed documents.
+#
+# The policy is deny-by-default for the formats that carry deal data, with a
+# narrow allowlist for the few files that are demonstrably synthetic or are
+# published market research. If you are adding an exception, the test is not
+# "is this useful" but "would I be comfortable with this file being public".
+# =============================================================================
+
+# ---- Office and PDF: deny by default -----------------------------------------
+# Executed leases, amendments, audit worksheets, correspondence and trackers all
+# arrive as these. The amendment template in particular stores *cached merge
+# results* inline -- a real landlord name, site address, site name, FAN, rent
+# and escalator sit inside the .docx even when no merge has been run. Clause
+# text is extracted to clauses/text/*.txt with merge fields as placeholders;
+# the .docx itself stays out.
+*.docx
+*.doc
+*.dotx
+*.xlsx
+*.xlsm
+*.xltx
+*.xls
+*.pptx
+*.ppt
+*.pdf
+
+# NO EXCEPTIONS. The market rent schedule used to be tracked here as the sole
+# authoring surface for the tier model. It is not any more:
+#
+#   - a compiled rate table is commercially valuable, and this repository is public
+#   - it made Excel a dependency of a project whose whole premise is that it
+#     opens from disk with nothing installed
+#   - it stored derived values beside their own inputs, which is how five adder
+#     columns came to be computed from a baseline, unused by the tool, and free
+#     to drift out of agreement with it
+#
+# market/market-rates.json replaces it: inputs only, bands computed at load.
+# See docs/market-data.md.
+
+# ---- Your own market rates ---------------------------------------------------
+# The shipped market/market-rates.json is ILLUSTRATIVE and deliberately
+# conservative. A real one is yours; keep it out of here.
+*.rates.json
+market-rates.private.json
+market-rates.local.json
+
+# ---- Real deal files ---------------------------------------------------------
+# Saved projects from the comparator and audit tool describe actual sites.
+# Only the synthetic fixtures are tracked.
+# Note the trailing /* rather than /. Excluding the DIRECTORY would make the
+# README un-re-includable — git cannot rescue a file whose parent directory is
+# excluded. Excluding the contents leaves the directory itself visible.
+deals/*
+!deals/README.md
+*.deal.json
+!fixtures/*.json
+
+# ---- Source documents --------------------------------------------------------
+# Scanned leases and amendments staged for an audit.
+source-documents/
+*.tif
+*.tiff
+
+# ---- Office lock files -------------------------------------------------------
+~$*
+.~lock.*
+
+# ---- OS and editor -----------------------------------------------------------
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
+
+# ---- Scratch -----------------------------------------------------------------
+_probe/
+scratch/
+tmp/

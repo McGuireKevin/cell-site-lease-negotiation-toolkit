@@ -1,0 +1,5 @@
+Section {{sectionMap.term}} of the Agreement is hereby amended as follows:
+
+The period of notice required for {{TenantTitle}} to elect not to extend the {{TermName}} is changed to sixty (60) days prior to the expiration of the term then in effect. Any longer period stated elsewhere in the {{LeaseDocument}} is superseded to that extent.
+
+Notice given under this paragraph shall be effective when given in accordance with the notice provisions of the {{LeaseDocument}}.

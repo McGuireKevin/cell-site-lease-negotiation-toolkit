@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+PERSONAL PROPERTY TAXES. {{TenantTitle}} will pay any personal property taxes assessed against, or any portion of such taxes attributable to, the {{EquipmentName}} and any other property owned by {{TenantTitle}} and located on the {{AreaName}}.
+
+{{LandlordTitle}} will pay when due all real property taxes and assessments levied against the {{PropertyName}}, including the {{AreaName}}.

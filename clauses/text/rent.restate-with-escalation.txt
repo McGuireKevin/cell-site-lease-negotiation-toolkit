@@ -1,0 +1,7 @@
+Section {{sectionMap.rent}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+RENT. Commencing on {{Extension_Term_Start_Date}}, {{TenantTitle}} shall pay {{LandlordTitle}} {{RentProposal_Words}} (${{RentProposal}}) per month as {{RentName}}, in advance on the first day of each calendar month, without demand, deduction or set-off except as expressly permitted by the {{LeaseDocument}}.
+
+ESCALATION. Commencing on the first anniversary of {{Extension_Term_Start_Date}} and on each anniversary thereafter, the {{RentName}} shall increase by {{EscalatorProposal}} percent of the {{RentName}} payable during the immediately preceding twelve (12) month period.
+
+PRORATION. {{RentName}} for any partial month at the beginning or end of the term shall be prorated on the basis of the actual number of days in that month.

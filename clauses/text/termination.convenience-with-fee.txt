@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+TERMINATION. {{TenantTitle}} may terminate this {{DocumentType}} at any time, for any reason or for no reason, upon one hundred eighty (180) days prior written notice to {{LandlordTitle}}, provided that {{TenantTitle}} pays {{LandlordTitle}} a termination fee equal to three (3) months of the {{RentName}} in effect on the date the notice is given.
+
+No termination fee shall be payable where {{TenantTitle}} terminates under any other provision of the {{LeaseDocument}}, including termination for default, casualty, condemnation, interference or inability to obtain or maintain a required governmental approval.
+
+Upon the effective date of termination, {{RentName}} and all other charges shall be prorated to that date and {{LandlordTitle}} shall refund any prepaid amounts attributable to the period after it.

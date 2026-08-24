@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Redline Review</title>
+<style>
+/* Shares the comparator's palette so the tools read as one product. Dark is the
+   default; every colour is a token, or it will not flip. */
+:root{
+  color-scheme:dark;
+  --bg:#14171a; --panel:#1c2024; --ink:#e7eaef; --muted:#9aa3b0; --line:#2e343b;
+  --header-bg:#191d21;
+  --accent:#6aa8f0; --accent-fill:#2f6fc4; --accent-hover:#3f83d8; --accent-soft:#1d3a5c; --on-accent:#fff;
+  --good:#4ec98a; --bad:#f2837a;
+  --warn:#e8bd6a; --warn-bg:#332913; --warn-line:#a67c2a; --warn-badge:#8a6100;
+  --err-bg:#3a1f1d; --err-ink:#f3a9a2;
+  --ok-bg:#15301f; --ok-ink:#7fd9a8;
+  --btn-bg:#252a30; --btn-hover:#2e343b; --btn-hover-line:#454d57;
+  --field-bg:#22272c; --th-bg:#22272c; --row-hover:#242a30; --cat-bg:#1a1e22;
+  --card-bg:#1f242a; --info-bg:#22272c; --info-line:#4a525c; --info-ink:#c3cad3;
+  --tip-bg:#1a1d21; --tip-ink:#f2f4f7; --grey:#4d5761;
+  --doc-bg:#101315;
+  --del-bg:#3a1f1d; --del-ink:#f3a9a2; --ins-bg:#15301f; --ins-ink:#7fd9a8;
+  --shadow-sm:rgba(0,0,0,.45); --shadow-lg:rgba(0,0,0,.55);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f4f5f7; --panel:#fff; --ink:#1a1d21; --muted:#6b7280; --line:#dfe3e8;
+  --header-bg:#fff;
+  --accent:#1f5fa9; --accent-fill:#1f5fa9; --accent-hover:#194e8c; --accent-soft:#e8f0fa; --on-accent:#fff;
+  --good:#0f7b4f; --bad:#b3261e;
+  --warn:#8a6100; --warn-bg:#fff8e6; --warn-line:#d99a00; --warn-badge:#8a6100;
+  --err-bg:#fdecea; --err-ink:#7d1a15;
+  --ok-bg:#eaf6ef; --ok-ink:#0b5c3b;
+  --btn-bg:#fff; --btn-hover:#f0f2f5; --btn-hover-line:#c4cad2;
+  --field-bg:#fff; --th-bg:#fafbfc; --row-hover:#f7f9fc; --cat-bg:#eef1f5;
+  --card-bg:#fcfcfd; --info-bg:#fff; --info-line:#b3bac4; --info-ink:#41474f;
+  --tip-bg:#1a1d21; --tip-ink:#f2f4f7; --grey:#8b93a0;
+  --doc-bg:#fff;
+  --del-bg:#fdecea; --del-ink:#7d1a15; --ins-bg:#eaf6ef; --ins-ink:#0b5c3b;
+  --shadow-sm:rgba(0,0,0,.04); --shadow-lg:rgba(0,0,0,.32);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+     font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{background:var(--header-bg);border-bottom:1px solid var(--line);padding:12px 20px;position:sticky;top:0;z-index:50;
+       display:flex;gap:14px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 3px var(--shadow-sm)}
+h1{font-size:19px;margin:0;font-weight:650}
+h2{font-size:15px;margin:0 0 12px;font-weight:650}
+.sub{color:var(--muted);font-size:12px}
+.spacer{flex:1}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.wrap{max-width:1280px;margin:0 auto;padding:18px 20px 80px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:var(--btn-bg);border-radius:6px;cursor:pointer;color:var(--ink)}
+button:hover{background:var(--btn-hover);border-color:var(--btn-hover-line)}
+button.primary{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill);font-weight:600}
+button.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.sm{padding:3px 8px;font-size:12px}
+label{display:block;font-size:10.5px;color:var(--muted);margin-bottom:3px;font-weight:650;letter-spacing:.03em;text-transform:uppercase}
+select,input,textarea{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:5px;width:100%;background:var(--field-bg);color:var(--ink)}
+textarea{font:12.5px/1.55 var(--mono);min-height:190px;resize:vertical;white-space:pre}
+.grid{display:grid;gap:10px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media (max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.msg{padding:9px 12px;border-radius:6px;margin-bottom:8px;font-size:12.5px}
+.msg.err{background:var(--err-bg);border-left:3px solid var(--bad);color:var(--err-ink)}
+.msg.warn{background:var(--warn-bg);border-left:3px solid var(--warn-line);color:var(--warn)}
+.msg.ok{background:var(--ok-bg);border-left:3px solid var(--good);color:var(--ok-ink)}
+.msg.info{background:var(--info-bg);border-left:3px solid var(--accent);color:var(--info-ink)}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px;letter-spacing:.04em;white-space:nowrap}
+.r-high{background:var(--bad);color:var(--on-accent)}
+.r-medium{background:var(--warn-badge);color:var(--on-accent)}
+.r-low{background:var(--grey);color:var(--on-accent)}
+.r-none{background:var(--field-bg);color:var(--muted);border:1px solid var(--line)}
+.b-price{background:var(--accent-fill);color:var(--on-accent)}
+.b-open{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+.b-ok{background:var(--ok-bg);color:var(--ok-ink);border:1px solid var(--good)}
+.b-no{background:var(--err-bg);color:var(--err-ink);border:1px solid var(--bad)}
+.find{border:1px solid var(--line);border-left:3px solid var(--line);border-radius:6px;padding:11px 13px;margin-bottom:9px;background:var(--card-bg)}
+.find.high{border-left-color:var(--bad)}
+.find.medium{border-left-color:var(--warn-line)}
+.find.low{border-left-color:var(--grey)}
+.find.done{opacity:.58}
+.find .hd{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:5px}
+.find .ttl{font-weight:650;font-size:13.5px}
+.find .dt{font-family:var(--mono);font-size:12px;background:var(--field-bg);padding:6px 9px;border-radius:5px;
+          margin:6px 0;white-space:pre-wrap;word-break:break-word}
+.find .wy{font-size:12.5px;color:var(--muted)}
+.find .act{margin-top:9px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.find .act input[type=text]{width:auto;flex:1;min-width:180px;font-size:12.5px}
+.diff{font:12.5px/1.7 Georgia,"Times New Roman",serif;background:var(--doc-bg);border:1px solid var(--line);
+      border-radius:6px;padding:12px 14px;margin:6px 0}
+.diff del{background:var(--del-bg);color:var(--del-ink);text-decoration:line-through;padding:0 2px;border-radius:2px}
+.diff ins{background:var(--ins-bg);color:var(--ins-ink);text-decoration:none;padding:0 2px;border-radius:2px}
+.stat{background:var(--card-bg);border:1px solid var(--line);border-radius:7px;padding:11px 13px}
+.stat .v{font:700 21px/1.2 var(--mono)}
+.stat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+.filebtn{position:relative;overflow:hidden;display:inline-block}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--tip-bg);color:var(--tip-ink);
+       padding:10px 18px;border-radius:7px;z-index:999;font-size:13px;max-width:700px;box-shadow:0 4px 14px var(--shadow-lg)}
+.hint{font-size:12px;color:var(--muted);margin:6px 0 0}
+code{font-family:var(--mono);background:var(--field-bg);padding:1px 4px;border-radius:3px;font-size:12px}
+.admin-only{display:none!important}
+body.admin .admin-only{display:inline-block!important}
+body.admin div.admin-only{display:block!important}
+.scroll{max-height:none}
+details{border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin-top:8px;background:var(--card-bg)}
+summary{cursor:pointer;font-size:12.5px;color:var(--muted);font-weight:650}
+@media print{
+  :root{ --bg:#fff; --panel:#fff; --ink:#1a1d21; --muted:#555; --line:#ccc; --doc-bg:#fff;
+         --header-bg:#fff; --card-bg:#fff; --field-bg:#f4f4f4;
+         --del-bg:#fdecea; --del-ink:#7d1a15; --ins-bg:#eaf6ef; --ins-ink:#0b5c3b;
+         --shadow-sm:none; --shadow-lg:none }
+  header,.noprint{display:none!important}
+  body{background:#fff}
+  .find{break-inside:avoid}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @page{margin:16mm}
+}
+</style>
+<script>
+(function(){ try{ if(localStorage.getItem('leaseComparator_theme')==='light')
+  document.documentElement.setAttribute('data-theme','light'); }catch(e){} })();
+</script>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Redline Review</h1>
+    <div class="sub">Stage 7 &mdash; read every change as it arrives, not once at the end</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="row noprint">
+    <span class="filebtn"><button>Open Deal File</button><input type="file" accept=".json" onchange="openDeal(this)"></span>
+    <button id="saveBtn" onclick="saveDeal()" disabled>Save Deal File</button>
+    <button id="reportBtn" onclick="exportReport()" disabled>Export Review</button>
+    <button class="admin-only" id="themeBtn" onclick="toggleTheme()">Light Mode</button>
+    <button onclick="window.print()">Print</button>
+    <span class="badge b-open admin-only" title="Ctrl+Shift+A to leave admin mode">admin</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="loadState"></div>
+
+  <div class="panel noprint">
+    <h2>This round</h2>
+    <div class="grid g4" style="margin-bottom:12px">
+      <div>
+        <label>Round</label>
+        <input id="round" type="number" min="1" step="1" value="1">
+      </div>
+      <div>
+        <label>Received</label>
+        <input id="rdate" type="date">
+      </div>
+      <div>
+        <label>From</label>
+        <select id="rfrom">
+          <option value="landlord">Landlord</option>
+          <option value="us">Us</option>
+        </select>
+      </div>
+      <div>
+        <label>Document reference</label>
+        <input id="rref" placeholder="e.g. amendment-r2-landlord.docx">
+      </div>
+    </div>
+
+    <div class="grid g2">
+      <div>
+        <label>What we sent (the baseline)</label>
+        <textarea id="ours" placeholder="Paste the version this round is answering.&#10;&#10;For round 1 that is the drafter's output. For round 3 it is round 2 — NOT the original draft."></textarea>
+      </div>
+      <div>
+        <label>What came back</label>
+        <textarea id="theirs" placeholder="Paste the returned document."></textarea>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:11px">
+      <button class="primary" onclick="analyze()">Compare</button>
+      <span class="filebtn"><button>Open returned .docx</button>
+        <input type="file" accept=".docx,.pdf" onchange="openReturned(this)"></span>
+      <button class="sm" onclick="loadSample()">Load worked example</button>
+    </div>
+    <div id="ingest"></div>
+    <p class="hint">
+      Opening a <b>.docx</b> reads it directly &mdash; the text, the formatting, any comments, and
+      <b>tracked changes if they used them</b>, which is better than any diff because it is what
+      they actually did rather than what a comparison infers. A <b>.pdf</b> is inspected and
+      reported on: it carries no styles, so it can never answer the formatting question.
+    </p>
+
+    <p class="hint">
+      <b>Round N is compared against round N&minus;1, not against the original draft.</b>
+      Comparing every round to the first draft re-reports everything already dispositioned, which
+      is how a reviewer learns to skim the list.
+    </p>
+  </div>
+
+  <div id="stats" class="grid g4" style="margin-bottom:16px;display:none"></div>
+
+  <div class="panel" id="resultPanel" style="display:none">
+    <h2>Findings</h2>
+    <div class="row noprint" style="margin-bottom:10px">
+      <button class="sm" onclick="setAllDisp(true)">Accept all shown</button>
+      <button class="sm" onclick="clearDisp()">Clear dispositions</button>
+      <span class="hint" style="margin:0">Every finding needs a decision. Rejecting is a decision; ignoring is not.</span>
+    </div>
+    <div id="findings"></div>
+  </div>
+
+  <div class="panel" id="ledgerPanel" style="display:none">
+    <h2>Accumulated record</h2>
+    <div id="ledger"></div>
+  </div>
+
+</div>
+
+<script src="src/redline-compare.js"></script>
+<script src="src/docx-style.js"></script>
+<script src="src/docx-read.js"></script>
+<script src="src/docx-conform.js"></script>
+<script>
+/* =============================================================================
+   Redline Review — stage 7.
+
+   The comparison itself lives in src/redline-compare.js so it can be tested
+   without a browser driving it. This file is the surface.
+
+   THE DESIGN, and it is the opposite of the drafter's. The drafter REFUSES to
+   emit a defective document. This one refuses nothing — the landlord is
+   entitled to ask for things, and most of a redline is fine. What it will not
+   do is let a change go by UNSEEN. Every finding has to be accepted or
+   rejected by a person, and the count of undecided ones is what stage 8 reads.
+   ============================================================================= */
+let deal = null, analysis = null, disp = {}, conform = null, returned = null;
+
+/* ---------- ingesting what came back ----------
+   A .docx is read in full. A .pdf is inspected and reported on — see
+   docs/ingestion.md for why extraction is refused rather than attempted. */
+function openReturned(inp){
+  const f = inp.files[0]; if(!f) return;
+  const isPdf = /\.pdf$/i.test(f.name);
+  const r = new FileReader();
+  r.onload = async () => {
+    try{
+      if(isPdf){ ingestPdf(f, r.result); }
+      else { await ingestDocx(f, r.result); }
+    }catch(e){
+      document.getElementById('ingest').innerHTML =
+        `<div class="msg err"><b>Could not read ${esc(f.name)}.</b> ${esc(e.message)}</div>`;
+    }
+    inp.value = '';
+  };
+  r.readAsArrayBuffer(f);
+}
+
+async function ingestDocx(file, buf){
+  const d = await readDocx(buf);
+  returned = d;
+  conform = conformDocx(d, DOCX_FORMAT);
+
+  /* Tracked changes are authoritative: they are the landlord's edits, not an
+     inference from comparing two documents. Where they exist, the "ours" side
+     is the document BEFORE their changes, taken from the same file — which
+     also removes the commonest source of false findings, comparing against the
+     wrong version of our own draft. */
+  document.getElementById('theirs').value = d.text;
+  let note = '';
+  if(d.hasTrackedChanges){
+    document.getElementById('ours').value = d.textBefore;
+    note = `<div class="msg ok"><b>Tracked changes found — using them.</b> Both sides came from this
+      one file: what it said before their edits, and what it says now. That is what they actually
+      did, rather than what a comparison infers, and it removes the risk of diffing against the
+      wrong version of our own draft.</div>`;
+  } else {
+    note = `<div class="msg warn"><b>No tracked changes in this document.</b> The returned text is
+      loaded on the right; paste or load the version you sent on the left so the comparison has
+      something to work from. A landlord who edits without Track Changes is not necessarily hiding
+      anything, but nothing in the file records what they touched.</div>`;
+  }
+
+  const c = conform.summary;
+  const risky = conform.findings.filter(f => f.risk === 'high');
+  note += `<div class="msg ${risky.length ? 'err' : 'info'}">
+    <b>Formatting:</b> ${c.paragraphs} paragraphs ·
+    ${c.numberingIntact ? 'numbering intact' : '<b>numbering damaged</b>'} ·
+    ${c.directFormattingCount} with direct formatting ·
+    ${conform.findings.length} finding${conform.findings.length === 1 ? '' : 's'}
+    (${c.high} high, ${c.medium} medium, ${c.low} low)</div>`;
+
+  if(d.comments.length){
+    note += `<div class="msg info"><b>${d.comments.length} comment${d.comments.length === 1 ? '' : 's'}
+      in the document.</b> Usually where the reason lives, and the reason is what tells you whether
+      an edit is negotiable.<ul style="margin:6px 0 0;font-size:12px">` +
+      d.comments.slice(0, 6).map(c2 => `<li><b>${esc(c2.author || 'unattributed')}:</b> ${esc(c2.text)}</li>`).join('') +
+      `</ul></div>`;
+  }
+
+  document.getElementById('ingest').innerHTML =
+    `<div class="msg ok"><b>Read ${esc(file.name)}</b> — ${d.paragraphs.length} paragraphs,
+     ${d.parts.length} parts.</div>` + note;
+  toast('Document read. Press Compare to run the substantive comparison.');
+}
+
+function ingestPdf(file, buf){
+  const p = inspectPdf(buf);
+  const why = {
+    'scanned': 'This is a scan — images, no text layer. There is nothing in the file to extract.',
+    'no-text': 'No fonts are embedded, so there is no extractable text.',
+    'text-without-unicode-map': 'It has text but no ToUnicode map, so character codes cannot be ' +
+      'reliably mapped to letters. Extraction would produce plausible-looking wrong text.',
+    'text-layer': 'It has a proper text layer, so text could be extracted — but a PDF carries no ' +
+      'styles, so the formatting half of the comparison is impossible either way.'
+  }[p.verdict];
+
+  document.getElementById('ingest').innerHTML =
+    `<div class="msg warn"><b>${esc(file.name)} is a PDF (v${esc(p.version)}, ~${p.pages} pages).</b>
+      ${esc(why)}<br><br>
+      <b>Ask for the .docx.</b> A redline happens in Word, so the Word file exists; a PDF is usually
+      the flattened copy. It also carries the tracked changes and the comments, which a PDF does not.
+      <br><br>
+      If only the PDF exists, convert it to text first — Word opens a PDF directly and converts it,
+      including scans it can read — then paste the text on the right. The formatting comparison
+      stays unavailable, and the report will record it as not included rather than as clean.</div>`;
+  toast('PDF inspected. The formatting comparison needs the .docx.');
+}
+
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- deal file ---------- */
+function openDeal(inp){
+  const f = inp.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const o = JSON.parse(r.result);
+      if(!o.glob || !o.current) throw new Error('Not a deal file from this toolkit.');
+      deal = o;
+      /* Next round follows the highest already recorded, so a reviewer opening
+         a file mid-negotiation does not have to remember where they were. */
+      const rounds = ((o.redline||{}).rounds)||[];
+      const maxSeen = Math.max(0, ...(o.deviations||[]).map(d=>Number(d.round)||0),
+                                  ...rounds.map(r=>Number(r.round)||0));
+      document.getElementById('round').value = maxSeen + 1;
+      document.getElementById('saveBtn').disabled = false;
+      document.getElementById('loadState').innerHTML =
+        `<div class="msg info"><b>Loaded:</b> ${esc((o.glob&&o.glob.projectName)||'(unnamed deal)')}`+
+        (o.confidential ? ` &nbsp;·&nbsp; <b>confidential</b> &mdash; save outside the repository` : '')+
+        (o.stage ? ` &nbsp;·&nbsp; stage: <code>${esc(o.stage)}</code>` : '')+
+        ` &nbsp;·&nbsp; ${(o.deviations||[]).length} deviation(s) on file</div>`;
+      renderLedger();
+      toast('Deal file loaded. Round ' + (maxSeen+1) + ' is next.');
+    }catch(e){ alert('Could not read that file: '+e.message); }
+    inp.value='';
+  };
+  r.readAsText(f);
+}
+
+function saveDeal(){
+  if(!deal){ alert('Open a deal file first.'); return; }
+  commitToDeal();
+  const name = ((deal.glob&&deal.glob.projectName)||'deal').replace(/[^A-Za-z0-9]+/g,'-')
+                 .replace(/^-|-$/g,'').toLowerCase() || 'deal';
+  dl(name+'.deal.json', JSON.stringify(deal,null,2), 'application/json');
+  toast('Round written into the deal file.');
+}
+
+/* Findings and dispositions go into the deal file together. The merge keeps
+   anything a person already decided — see mergeDeviations(). */
+function commitToDeal(){
+  if(!analysis) return;
+  const round = Number(document.getElementById('round').value)||1;
+  const date  = document.getElementById('rdate').value || '';
+  const incoming = toDeviations(analysis, {date:date}).map(d => {
+    const s = disp[d.key];
+    if(s && s.accepted !== undefined){ d.accepted = s.accepted; d.acceptedBy = s.by || 'reviewer'; }
+    /* `!== undefined`, not truthiness — clearing a note is a decision too, and
+       an empty string has to reach the merge or the old note comes back. */
+    if(s && s.note !== undefined) d.note = s.note;
+    return d;
+  });
+  incoming.forEach(d => { if(!d.kind) d.kind = 'substance'; });
+
+  /* Formatting drift goes into the same list. Both are changes somebody has to
+     have seen, so both go through the same accept/reject discipline and reach
+     stage 8 the same way — `kind` is what lets the report group them. */
+  if(conform){
+    toDeviationsFromConform().forEach(d => {
+      const s = disp[d.key];
+      if(s && s.accepted !== undefined){ d.accepted = s.accepted; d.acceptedBy = s.by || 'reviewer'; }
+      if(s && s.note !== undefined) d.note = s.note;
+      incoming.push(d);
+    });
+  }
+
+  const m = mergeDeviations(deal.deviations||[], incoming);
+  deal.deviations = m.deviations;
+
+  deal.redline = deal.redline || {};
+  deal.redline.rounds = (deal.redline.rounds||[]).filter(r => Number(r.round) !== round);
+  deal.redline.rounds.push({
+    round: round, date: date,
+    from: document.getElementById('rfrom').value,
+    comparedTo: round - 1,
+    documentRef: document.getElementById('rref').value || '',
+    analyzedBy: 'redline.html',
+    note: analysis.summary.high + ' high, ' + analysis.summary.medium + ' medium across ' +
+          analysis.summary.paragraphsChanged + ' changed paragraph(s)'
+  });
+  deal.redline.rounds.sort((a,b)=>a.round-b.round);
+  if(deal.stage === 'drafting' || deal.stage === 'negotiation' || !deal.stage) deal.stage = 'redline';
+  return m;
+}
+
+/* ---------- compare ---------- */
+function analyze(){
+  const ours = document.getElementById('ours').value;
+  const theirs = document.getElementById('theirs').value;
+  if(!ours.trim() || !theirs.trim()){ alert('Both versions are needed — this works by comparison.'); return; }
+  const round = Number(document.getElementById('round').value)||1;
+  analysis = analyzeRedline(ours, theirs, deal||{}, {round:round});
+
+  /* Dispositions already stored in the deal file carry forward, so a reviewer
+     who re-runs a round sees their own decisions rather than a blank list. */
+  disp = {};
+  ((deal||{}).deviations||[]).forEach(d => {
+    if(d.key && d.accepted !== undefined) disp[d.key] = {accepted:d.accepted, by:d.acceptedBy, note:d.note};
+  });
+
+  document.getElementById('reportBtn').disabled = false;
+  renderStats(); renderFindings(); renderLedger();
+  const n = analysis.findings.length;
+  toast(n ? n + ' finding' + (n>1?'s':'') + ' — every one needs a decision.'
+          : 'No mechanical change found. That is not the same as safe.');
+}
+
+function toDeviationsFromConform(){
+  return conformToDeviations(conform, {round: Number(document.getElementById('round').value)||1,
+                                       date: document.getElementById('rdate').value || ''});
+}
+
+/* THE ONE ACCESSOR. Everything that indexes a finding — rendering, accepting,
+   counting — goes through this, because the rendered list is substantive
+   findings plus formatting ones and any code still reading analysis.findings
+   directly would disposition the wrong row. */
+function allFindings(){
+  return (analysis ? analysis.findings : []).concat(conformFindingsAsFindings());
+}
+
+/* Formatting findings render alongside the substantive ones, so a reviewer
+   works one list. They carry their own badge because deciding about a font is
+   not the same act as deciding about a termination right. */
+function conformFindingsAsFindings(){
+  if(!conform) return [];
+  return conform.findings.map((f, i) => ({
+    key: 'fmt:r' + (Number(document.getElementById('round').value)||1) + ':' + f.signal,
+    signal: f.signal, risk: f.risk, kind: 'formatting',
+    label: f.label, detail: f.detail, why: f.why, paragraph: null
+  }));
+}
+
+function renderStats(){
+  const s = analysis.summary;
+  const open = allFindings().filter(f => !disp[f.key] || disp[f.key].accepted === undefined).length;
+  const cards = [
+    ['high risk', s.high, s.high ? 'var(--bad)' : 'var(--muted)'],
+    ['medium risk', s.medium, s.medium ? 'var(--warn)' : 'var(--muted)'],
+    ['undecided', open, open ? 'var(--warn)' : 'var(--good)'],
+    ['paragraphs changed', s.paragraphsChanged + ' / ' + s.paragraphsTotal, 'var(--ink)']
+  ];
+  document.getElementById('stats').style.display = '';
+  document.getElementById('stats').innerHTML = cards.map(c =>
+    `<div class="stat"><div class="v" style="color:${c[2]}">${esc(c[1])}</div><div class="k">${esc(c[0])}</div></div>`
+  ).join('') + (s.affectsPricing
+    ? `<div class="stat" style="grid-column:1/-1;border-color:var(--accent)">
+         <div class="k" style="color:var(--accent)">the comparator result on file is stale</div>
+         <div style="font-size:12.5px;margin-top:4px">A figure that was priced has moved. Re-run the
+         scenario before this goes to internal review, or the financial case describes a deal that is
+         no longer on the table.</div></div>`
+    : '');
+}
+
+function diffHtml(p){
+  if(!p || !p.ops) return '';
+  return '<div class="diff">' + p.ops.map(o => {
+    const t = esc(rlJoin(o.tokens));
+    return o.op === 'eq' ? t : o.op === 'del' ? '<del>'+t+'</del>' : '<ins>'+t+'</ins>';
+  }).join(' ') + '</div>';
+}
+
+function renderFindings(){
+  document.getElementById('resultPanel').style.display = '';
+  /* One list: what the words say, and what the formatting did. Both need a
+     decision, so both belong in front of the reviewer at once. */
+  const fs = allFindings();
+  if(!fs.length){
+    document.getElementById('findings').innerHTML =
+      `<div class="msg ok"><b>Nothing mechanical found.</b> No pattern this tool knows about fired,
+       and no figure moved. That is not a legal review &mdash; it cannot read a sentence and tell you
+       an obligation now runs the wrong way. Treat it as &ldquo;nothing found&rdquo;, never as
+       &ldquo;safe to sign&rdquo;.</div>`;
+    return;
+  }
+  document.getElementById('findings').innerHTML = fs.map((f,i) => {
+    const s = disp[f.key] || {};
+    const decided = s.accepted !== undefined;
+    return `<div class="find ${esc(f.risk)} ${decided?'done':''}">
+      <div class="hd">
+        <span class="badge r-${esc(f.risk)}">${esc(f.risk)}</span>
+        ${f.affectsPricing ? '<span class="badge b-price" title="A priced figure moved">affects pricing</span>' : ''}
+        ${decided ? `<span class="badge ${s.accepted?'b-ok':'b-no'}">${s.accepted?'accepted':'rejected'}</span>`
+                  : '<span class="badge b-open">undecided</span>'}
+        <span class="ttl">${esc(f.label)}</span>
+        <span class="spacer"></span>
+        <code>${esc(f.signal)}</code>
+      </div>
+      <div class="dt">${esc(f.detail)}</div>
+      <div class="wy">${esc(f.why)}</div>
+      ${f.paragraph && f.paragraph.kind === 'matched'
+        ? `<details class="noprint"><summary>Show the paragraph</summary>${diffHtml(f.paragraph)}</details>`
+        : ''}
+      <div class="act noprint">
+        <button class="sm" onclick="setDisp(${i},true)">Accept</button>
+        <button class="sm" onclick="setDisp(${i},false)">Reject</button>
+        <button class="sm" onclick="setDisp(${i},undefined)">Undecide</button>
+        <input type="text" placeholder="Note — why this was accepted or rejected"
+               value="${esc(s.note||'')}" oninput="setNote(${i}, this.value)">
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setDisp(i, v){
+  const f = allFindings()[i];
+  const s = disp[f.key] = disp[f.key] || {};
+  if(v === undefined) delete s.accepted; else { s.accepted = v; s.by = 'reviewer'; }
+  renderFindings(); renderStats();
+}
+function setNote(i, v){
+  const f = allFindings()[i];
+  (disp[f.key] = disp[f.key] || {}).note = v;
+}
+function setAllDisp(v){
+  allFindings().forEach(f => { disp[f.key] = disp[f.key]||{}; disp[f.key].accepted = v; disp[f.key].by='reviewer'; });
+  renderFindings(); renderStats();
+  toast('Accepting in bulk is quick. It is also how a high-risk change gets agreed without being read.');
+}
+function clearDisp(){ disp = {}; renderFindings(); renderStats(); }
+
+/* ---------- the accumulated record ----------
+   Every round, not just this one. This is what stage 8 is handed. */
+function renderLedger(){
+  if(!deal) return;
+  const merged = analysis ? mergeDeviations(deal.deviations||[], toDeviations(analysis,{}).map(d=>{
+    const s = disp[d.key]; if(s && s.accepted !== undefined) d.accepted = s.accepted; return d;
+  })).deviations : (deal.deviations||[]);
+  if(!merged.length){ document.getElementById('ledgerPanel').style.display='none'; return; }
+  document.getElementById('ledgerPanel').style.display = '';
+  const open = merged.filter(d => d.accepted !== true && d.accepted !== false);
+  const byRound = {};
+  merged.forEach(d => { (byRound[d.round||0] = byRound[d.round||0] || []).push(d); });
+  document.getElementById('ledger').innerHTML =
+    (open.length
+      ? `<div class="msg warn"><b>${open.length} deviation${open.length>1?'s':''} undecided.</b>
+         The final report is allowed to carry known risk. It is not allowed to carry unread risk.</div>`
+      : `<div class="msg ok"><b>Every deviation on file has been decided.</b> Rejected ones are closed
+         too &mdash; someone looked and said no.</div>`) +
+    Object.keys(byRound).sort((a,b)=>a-b).map(r =>
+      `<div style="margin-top:10px"><b style="font-size:12.5px">Round ${esc(r)}</b>` +
+      byRound[r].map(d => `<div style="font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--line)">
+        <span class="badge r-${esc(d.risk||'none')}">${esc(d.risk||'—')}</span>
+        ${d.accepted===true?'<span class="badge b-ok">accepted</span>':
+          d.accepted===false?'<span class="badge b-no">rejected</span>':
+          '<span class="badge b-open">undecided</span>'}
+        ${d.affectsPricing?'<span class="badge b-price">pricing</span>':''}
+        ${esc(d.summary)}</div>`).join('') + `</div>`
+    ).join('');
+}
+
+/* ---------- export ---------- */
+function exportReport(){
+  if(!analysis){ alert('Run a comparison first.'); return; }
+  const round = Number(document.getElementById('round').value)||1;
+  const title = 'Redline review — round ' + round +
+                (deal ? ' — ' + ((deal.glob&&deal.glob.projectName)||'') : '');
+  const rows = allFindings().map(f => {
+    const s = disp[f.key] || {};
+    return `<tr><td>${esc(f.risk)}${f.affectsPricing?'<br><i>pricing</i>':''}</td>
+      <td><b>${esc(f.label)}</b><br><span style="font-size:9.5pt">${esc(f.detail)}</span></td>
+      <td style="font-size:9.5pt">${esc(f.why)}</td>
+      <td>${s.accepted===true?'Accepted':s.accepted===false?'Rejected':'<b>Undecided</b>'}
+      ${s.note?'<br><span style="font-size:9pt">'+esc(s.note)+'</span>':''}</td></tr>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
+<style>body{font:11pt/1.5 "Times New Roman",Georgia,serif;margin:1in}
+h1{font-size:14pt}table{border-collapse:collapse;width:100%}
+td,th{border:1px solid #999;padding:6pt;vertical-align:top;text-align:left}
+th{background:#eee;font-size:10pt}</style></head><body>
+<h1>${esc(title)}</h1>
+<p>${analysis.summary.high} high risk, ${analysis.summary.medium} medium, across
+${analysis.summary.paragraphsChanged} changed paragraph(s) of ${analysis.summary.paragraphsTotal}.
+${analysis.summary.affectsPricing ? '<b>A priced figure moved — the comparator result on file is stale.</b>' : ''}</p>
+<table><tr><th>Risk</th><th>Change</th><th>Why it matters</th><th>Decision</th></tr>${rows}</table>
+<p style="font-size:9pt;margin-top:18pt"><i>Mechanical comparison only. A clean run means no pattern
+this tool knows about fired; it is not a legal review.</i></p>
+</body></html>`;
+  dl('redline-round-'+round+'.html', html, 'text/html;charset=utf-8');
+  toast('Exported. Open in Word and Save As .docx.');
+}
+
+/* ---------- worked example ----------
+   Synthetic. Every change in it is one this tool is meant to catch. */
+function loadSample(){
+  document.getElementById('ours').value =
+`1. Rent. Commencing on the Extension Term Start Date, Tenant shall pay to Landlord rent of $2,100.00 per month, subject to an escalation of 3% per annum.
+
+2. Assignment. Tenant may assign this Agreement or sublease the Premises with the consent of Landlord, such consent not to be unreasonably withheld, conditioned or delayed.
+
+3. Termination. Tenant shall have the right to terminate this Agreement at any time, for any reason, upon one hundred eighty (180) days written notice to Landlord.
+
+4. Interference. Landlord shall not permit any use of the Property that interferes with the operations of Tenant.
+
+5. Access. Tenant shall have access to the Premises twenty-four hours per day, seven days per week, at no additional charge.`;
+  document.getElementById('theirs').value =
+`1. Rent. Commencing on the Extension Term Start Date, Tenant shall pay to Landlord rent of $2,250.00 per month, subject to an escalation of 3.5% per annum.
+
+2. Assignment. Tenant may assign this Agreement or sublease the Premises with the prior written consent of Landlord.
+
+3. Termination. Tenant shall have the right to terminate this Agreement upon one hundred eighty (90) days written notice to Landlord, and Landlord may terminate this Agreement upon like notice.
+
+5. Access. Tenant shall have access to the Property twenty-four hours per day, seven days per week, subject to Landlord's escort requirements and at Tenant's sole cost.`;
+  document.getElementById('rref').value = 'worked-example-r1.docx';
+  toast('Worked example loaded — synthetic, and every change in it is one this catches.');
+}
+
+function dl(name,text,mime){
+  const b = new Blob([text],{type:mime||'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},0);
+}
+function toast(m){
+  const d=document.createElement('div'); d.className='toast'; d.textContent=m;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),3600);
+}
+
+/* ---------- admin + theme, shared with the other tools ---------- */
+const AKEY='leaseComparator_adminMode', TKEY='leaseComparator_theme';
+function setAdmin(on,announce){
+  document.body.classList.toggle('admin',!!on);
+  try{ on?localStorage.setItem(AKEY,'1'):localStorage.removeItem(AKEY); }catch(e){}
+  if(announce) toast(on?'Admin mode on — the theme switch is in the toolbar. Ctrl+Shift+A turns it off.'
+                      :'Admin mode off.');
+}
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.shiftKey&&(e.key==='A'||e.key==='a')){ e.preventDefault();
+    setAdmin(!document.body.classList.contains('admin'),true); }
+});
+(function(){ let on=false; try{ on=localStorage.getItem(AKEY)==='1'; }catch(e){}
+  if(/[?&]admin=1(&|$)/.test(location.search)) on=true;
+  if(on) document.body.classList.add('admin'); })();
+function currentTheme(){ return document.documentElement.getAttribute('data-theme')==='light'?'light':'dark'; }
+function setTheme(t,announce){
+  const light=t==='light';
+  if(light) document.documentElement.setAttribute('data-theme','light');
+  else document.documentElement.removeAttribute('data-theme');
+  try{ localStorage.setItem(TKEY,light?'light':'dark'); }catch(e){}
+  const b=document.getElementById('themeBtn');
+  if(b) b.textContent = light?'Dark Mode':'Light Mode';
+  if(announce) toast(light?'Light mode on — this machine only.':'Dark mode on.');
+}
+function toggleTheme(){ setTheme(currentTheme()==='light'?'dark':'light',true); }
+setTheme(currentTheme(),false);
+
+(function(){ const d=new Date(); document.getElementById('rdate').value =
+  d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+TERMINATION ON DEFAULT. In addition to any other remedy available at law or in equity, {{TenantTitle}} may terminate this {{DocumentType}} upon written notice to {{LandlordTitle}} if {{LandlordTitle}} fails to cure a default within the period allowed under the {{LeaseDocument}}.
+
+{{TenantTitle}} may alternatively cure the default itself and deduct the reasonable cost of doing so, together with interest at the rate stated in the {{LeaseDocument}}, from the {{RentName}} and other amounts next becoming due. Election of one remedy shall not preclude the other.

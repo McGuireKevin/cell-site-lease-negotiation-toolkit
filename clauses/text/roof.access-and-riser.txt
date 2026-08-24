@@ -1,0 +1,11 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+ACCESS ROUTE, RISER AND CONDUIT. In addition to access to the {{AreaName}}, {{LandlordTitle}} grants {{TenantTitle}} the right to use, at no additional charge:
+
+(a) a route through the {{PropertyName}} from a public way to the {{AreaName}}, including lobbies, stairwells, elevators and roof hatches, adequate for the movement of personnel and equipment;
+
+(b) space in the existing risers, conduits, chases and cable trays of the {{PropertyName}} sufficient for {{TenantTitle}}'s transmission, electrical and telecommunications cabling between the {{AreaName}}, any equipment room and the point of entry for utilities; and
+
+(c) a location within the {{PropertyName}} for {{TenantTitle}}'s equipment cabinet, meter and point of interconnection.
+
+{{LandlordTitle}} will not grant riser or conduit space to any other party to the extent doing so would leave insufficient space for {{TenantTitle}}'s use as described above, and will provide keys, codes and any other instruments necessary for the access granted here.

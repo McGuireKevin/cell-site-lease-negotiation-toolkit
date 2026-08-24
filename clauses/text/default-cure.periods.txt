@@ -1,0 +1,7 @@
+Section {{sectionMap.defaultCure}} of the Agreement is hereby deleted in its entirety and replaced with the following:
+
+DEFAULT AND CURE. Neither party shall be in default under this {{DocumentType}} unless it has failed to perform and has not cured within the applicable period after written notice from the other party.
+
+For a failure to pay a monetary amount when due, the cure period is thirty (30) days after written notice. For any other failure, the cure period is forty-five (45) days after written notice, provided that if the failure cannot reasonably be cured within that period, no default occurs while the party has commenced the cure within the period and continues to prosecute it diligently to completion.
+
+For a failure by {{LandlordTitle}} to provide access to the {{AreaName}}, or to cause interference to cease, the cure period is twenty-four (24) hours after notice, given the effect of those failures on the operation of the {{EquipmentName}}.

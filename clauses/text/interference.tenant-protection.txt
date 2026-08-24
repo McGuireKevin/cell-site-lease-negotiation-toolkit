@@ -1,0 +1,7 @@
+The Agreement is hereby amended to include the following terms and conditions:
+
+INTERFERENCE. {{LandlordTitle}} will not, and will not permit any other tenant, licensee, invitee or occupant of the {{PropertyName}} to, install, operate or maintain any equipment or engage in any activity that interferes in any material respect with the operation of the {{EquipmentName}} or with {{TenantTitle}}'s use of the {{AreaName}} as permitted under the Agreement. Interference includes any measurable degradation of, misinterpretation of, or loss of information carried by {{TenantTitle}}'s radio communications, determined in accordance with generally accepted engineering practice and, where applicable, an intermodulation study.
+
+{{LandlordTitle}} will include a provision substantially similar to this paragraph in every future lease, license or occupancy agreement affecting the {{PropertyName}} that permits the installation or operation of communications equipment, and will enforce that provision at {{TenantTitle}}'s request.
+
+The foregoing does not apply to communications equipment lawfully installed and operating on the {{PropertyName}} as of the date of this Amendment and identified in writing to {{TenantTitle}}, provided such equipment is not thereafter modified in a manner that increases interference.

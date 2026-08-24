@@ -1,0 +1,782 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Lease deal file",
+  "description": "The integration format for the lease negotiation toolkit. One file describes one site: what the audit found, what the current lease says, and what each proposal offers. Every component reads and writes this shape.\n\nBACKWARD COMPATIBILITY: files saved before v1 carry only glob/current/proposals and no schemaVersion. Those still validate here — only the three original members are required. The validator treats a missing schemaVersion as legacy and says so, rather than refusing to load.\n\nUNITS: every rate the engine handles is MONTHLY. Percentages are stored as whole numbers in the *Pct fields (3 means 3%) and divided by 100 at the UI/engine boundary. See docs/schema.md.",
+  "type": "object",
+  "required": ["glob", "current", "proposals"],
+  "properties": {
+
+    "schemaVersion": {
+      "description": "Semver of this file format. Absent means legacy (pre-v1); the validator warns rather than failing.",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "examples": ["1.0"]
+    },
+
+    "confidential": {
+      "description": "True when this file describes a real site. Tooling refuses to write a confidential file into the repo. Fixtures set this false.",
+      "type": "boolean",
+      "default": true
+    },
+
+    "stage": {
+      "description": "Where this deal sits.\n\n  audit           read the document chain; TRIAGE whether to proceed at all\n  market-test     is this a strong candidate for rent reduction\n  comparison      price scenarios, build a financial proposal\n  internal-review human, higher-ups if needed, then the client\n  negotiation     with the landlord; counters go back to comparison\n  drafting        amendment or new lease\n  redline         exchange on all terms; deviations tracked as they arrive\n  final-report    to leadership, finance, risk and legal\n\nTHIS IS THE USUAL ORDER, NOT AN ENFORCED SEQUENCE. Drafting can precede negotiation: where the ask is essentially rent, the proposal can be a rent proposal and drafting waits; where terms drive the negotiation, or the landlord asks for a draft, drafting runs first. Nothing should refuse a transition on the grounds that it is out of order.",
+      "enum": ["audit", "market-test", "comparison", "internal-review", "negotiation",
+               "drafting", "redline", "final-report", "closed"],
+      "default": "audit"
+    },
+
+    "stageHistory": {
+      "description": "Log of stage transitions. Worth keeping because comparison, negotiation and redline each recur, and the bare stage cannot say which round produced a given figure — or that drafting happened before negotiation on this deal.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stage": { "enum": ["audit", "market-test", "comparison", "internal-review", "negotiation",
+                              "drafting", "redline", "final-report", "closed"] },
+          "date":  { "$ref": "#/$defs/dateOrBlank" },
+          "by":    { "type": "string", "description": "Who or what — a person, or the agent that ran the step." },
+          "note":  { "type": "string", "description": "What changed, and why." }
+        }
+      }
+    },
+
+    "deviations": {
+      "description": "Where the document departs from the clause library it started as.\n\nAPPENDED THROUGHOUT REDLINING, not compiled once at the end. Every round is reviewed as it arrives, because that is where a bad change is cheapest to reject — once a term has survived three exchanges it is much harder to take back. The accumulated record is what feeds the stage-8 report.\n\nA deviation is NOT a defect. It is something that must be seen and decided on, which is why entries carry `accepted` rather than being silently dropped once resolved.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["summary"],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "Stable identity for this deviation, so re-running an analysis UPDATES the entry rather than appending a second copy, and a disposition already made survives the re-run. Derived from what the finding IS, not from where it sits — a paragraph that moves is the same deviation. Hand-written entries may leave it blank; they simply never merge."
+          },
+          "round":     { "type": "integer", "minimum": 0, "description": "Which redline exchange it appeared in. 0 for anything present in the first draft." },
+          "date":      { "$ref": "#/$defs/dateOrBlank" },
+          "kind": {
+            "enum": ["substance", "formatting"],
+            "default": "substance",
+            "description": "What kind of departure this is, and they fail differently.\n\n`substance` is what the words say — visible to anyone who reads the clause.\n\n`formatting` is what the formatting did — invisible until it has accumulated across six rounds and the document reads as though nobody owned it. Broken numbering is the exception that is not cosmetic at all: if section numbers renumber or duplicate, every cross-reference points at the wrong clause and the document is wrong in a way that reads as clean.\n\nBoth go through the same accept/reject discipline, because both are changes somebody has to have seen. Kept apart so the final report can group them — deciding about a font is not the same act as deciding about a termination right."
+          },
+          "clauseId":  { "type": "string", "description": "The library clause this departs from, if it started as one." },
+          "summary":   { "type": "string", "description": "What the document says instead." },
+          "affectsPricing": {
+            "type": "boolean",
+            "description": "True when the change moves a figure the comparator priced — a rent, an escalator, a term date. The financial case on file then describes a deal that is no longer on the table, and stays wrong until the scenario is re-run.\n\nDeliberately separate from `origin`; they are different axes. A landlord redline that moves the rent is origin 'landlord-redline' AND affectsPricing, while a term arriving from a later proposal is origin 'later-proposal' whether or not it touches a number."
+          },
+          "origin": {
+            "enum": ["landlord-redline", "later-proposal", "drafting-error", "our-concession", "unknown"],
+            "description": "'later-proposal' is the one to watch: it means the priced scenario and the document may no longer match, so the comparator result on file is stale. 'our-concession' distinguishes something given deliberately from something that arrived."
+          },
+          "risk":      { "enum": ["none", "low", "medium", "high"] },
+          "raisedBy":  { "type": "string", "description": "Person or agent that flagged it." },
+          "rationale": { "type": "string", "description": "Why it was flagged — generated by whatever raised it. Kept separate from `note` so a merge can tell machine text from a person's, and know which of the two to preserve." },
+          "accepted":  { "type": "boolean", "description": "True once someone has decided it is acceptable, false once someone has decided it is not. ABSENT means undecided, which is the state stage 8 refuses to carry — a rejected deviation is closed, an unread one is not." },
+          "acceptedBy":{ "type": "string" },
+          "note":      { "type": "string", "description": "The reviewer's own words. Only ever written by a person." }
+        }
+      }
+    },
+
+    "redline": {
+      "description": "The exchange itself — who sent what, when. Separate from deviations[], which is what was FOUND in it.\n\nThis exists because of one rule that is easy to get wrong: round N is compared against round N−1, not against the original draft. Comparing every round to the first draft re-reports everything already dispositioned, which is exactly how a reviewer learns to skim the list. Recording what each round was compared against is what makes that auditable afterwards.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rounds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "round":       { "type": "integer", "minimum": 1 },
+              "date":        { "$ref": "#/$defs/dateOrBlank" },
+              "from":        { "enum": ["landlord", "us"], "description": "Who sent this version." },
+              "comparedTo":  { "type": "integer", "minimum": 0, "description": "The round this was diffed against. 0 means the assembled draft." },
+              "documentRef": { "type": "string", "description": "Filename or reference. The document itself is NEVER stored here — it is an executed-form document describing a real site." },
+              "analyzedBy":  { "type": "string" },
+              "note":        { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "amendmentTerms": {
+      "description": "Negotiated values the amendment needs in its drafting, which are neither audit findings nor comparator outputs.\n\nThey exist because five clauses in the library referenced placeholders that nothing supplied — a co-location share, an insurance limit, a rent-guarantee end date, a ROFR notice period, a RAD centre. Each of those clauses blocked the drafter every time, for every deal, and had done since it was written. The library check now fails on a placeholder with no source, and this is the source.\n\nWhat belongs here is what the parties AGREED, not what the lease says today: the audit records the latter in `audit.terms`.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rentGuaranteeEndDate": { "$ref": "#/$defs/dateOrBlank", "description": "Last day of any guaranteed period being offered. A concession — price it before agreeing it." },
+        "insuranceCglLimit":    { "type": "string", "description": "Commercial general liability limit as it should read in the document, e.g. \"Three Million Dollars ($3,000,000)\"." },
+        "colocationSharePct":   { "$ref": "#/$defs/numberOrBlank", "description": "Landlord's share of co-location revenue, whole percent." },
+        "rofrNoticeDays":       { "type": "integer", "minimum": 0, "description": "Days to match a rental-stream or purchase offer." },
+        "radCenterFeet":        { "$ref": "#/$defs/numberOrBlank", "description": "RAD centre elevation in feet, where the amendment fixes it." },
+        "note":                 { "type": "string" }
+      }
+    },
+
+    "playbook": {
+      "description": "Stage 3.5. The negotiating position: what is being asked for, in what order, what it is worth, and where the walk-away sits.\n\nWRITTEN AFTER THE AUDIT AND THE COMPARATOR, because it depends on both — the audit says what is wrong with the lease and the comparator says what fixing it is worth. Regenerated whenever either moves, which is why `basedOn` records the inputs it was built from.\n\nTHE MOST SENSITIVE BLOCK IN THE FILE. It contains the concession sequence and the walk-away number. A comparator result reaching a landlord is embarrassing; a walk-away number reaching a landlord loses the negotiation outright. It is never exported into anything a counterparty sees.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preparedOn": { "$ref": "#/$defs/dateOrBlank" },
+        "preparedBy": { "type": "string" },
+        "round":      { "type": "integer", "minimum": 0, "description": "Which negotiation round this position was written for. 0 is the opening position." },
+
+        "basedOn": {
+          "description": "What the playbook was built from, so staleness is detectable rather than assumed. If the proposals or the analysis window have moved since, the figures below describe a deal that is no longer on the table.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "comparatorRunOn": { "$ref": "#/$defs/dateOrBlank" },
+            "windowStart":     { "$ref": "#/$defs/dateOrBlank" },
+            "windowEnd":       { "$ref": "#/$defs/dateOrBlank" },
+            "discountRatePct": { "$ref": "#/$defs/numberOrBlank" },
+            "proposalIds":     { "type": "array", "items": { "type": "string" } },
+            "marketTestedOn":  { "$ref": "#/$defs/dateOrBlank" }
+          }
+        },
+
+        "baselinePV": { "$ref": "#/$defs/numberOrBlank", "description": "Present value of doing nothing. THE WALK-AWAY REFERENCE: a counter costing more than this is worse than no deal. Copied from the comparator, never computed here." },
+        "targetPV":   { "$ref": "#/$defs/numberOrBlank", "description": "Present value of the position being pursued." },
+
+        "points": {
+          "description": "The asks, in the order they should be raised. Everything intended for this negotiation belongs in the first round — a term introduced in round three reads as bad faith and reopens what was settled.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["ask"],
+            "additionalProperties": false,
+            "properties": {
+              "rank":        { "type": "integer", "minimum": 1 },
+              "category":    { "type": "string", "description": "Clause category, so the position file and the impact map can both be reached from here." },
+              "clauseId":    { "type": "string", "description": "The library clause that would give effect to it, where one exists." },
+              "ask":         { "type": "string", "description": "What we want, in one line." },
+              "entitlement": { "type": "string", "description": "Why we are entitled to ask. Evidence, not assertion — the market ratio, the gap against the library, what the chain actually says." },
+              "worth":       { "$ref": "#/$defs/numberOrBlank", "description": "Present value of this point where it is priceable. Blank where it is not — most terms are not, and a made-up number is worse than none." },
+              "worthNote":   { "type": "string", "description": "Where the figure came from, or why the point cannot be priced." },
+              "anticipated": {
+                "type": "array",
+                "description": "What the landlord is expected to say, and the answer.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "landlord": { "type": "string" },
+                    "counter":  { "type": "string" },
+                    "source":   { "type": "string", "description": "'positions' where it came from the position file, 'site' where it was written for this deal." }
+                  }
+                }
+              },
+              "ladder": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "opening":   { "type": "string" },
+                  "target":    { "type": "string" },
+                  "walkAway":  { "type": "string" }
+                }
+              },
+              "tradeFor":  { "type": "array", "items": { "type": "string" }, "description": "Categories that can be offered to win this one." },
+              "priority":  { "enum": ["must-have", "should-have", "nice-to-have"] },
+              "status":    { "enum": ["open", "conceded", "won", "dropped", "not-raised"], "description": "Updated as rounds go by, so the final report can say how the position moved rather than only where it landed." },
+              "note":      { "type": "string" }
+            }
+          }
+        },
+
+        "doNotRaise": {
+          "description": "Subjects deliberately left alone, and why. Recorded rather than omitted: a later reader needs to know a silence was a decision. Seeded from the audit's present-better findings.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "category": { "type": "string" },
+              "because":  { "type": "string" }
+            }
+          }
+        },
+
+        "concessionOrder": {
+          "description": "What is given, in what order, and what each purchase buys. Decided before the call — a concession made in the order the landlord pushes is a concession made for nothing.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "give":     { "type": "string" },
+              "toGet":    { "type": "string" },
+              "note":     { "type": "string" }
+            }
+          }
+        },
+
+        "pushback": {
+          "description": "What the landlord ACTUALLY said, round by round, and how the position changed in response. Distinct from `points[].anticipated`, which is what we expected before the conversation — keeping the two apart is what lets the position file learn from real objections rather than from our guesses about them.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "round":     { "type": "integer", "minimum": 1 },
+              "date":      { "$ref": "#/$defs/dateOrBlank" },
+              "category":  { "type": "string" },
+              "said":      { "type": "string", "description": "Their words, as close to verbatim as the record allows." },
+              "response":  { "type": "string", "description": "What we said back." },
+              "outcome":   { "enum": ["held", "conceded", "traded", "deferred", "unresolved"] },
+              "movedTo":   { "type": "string", "description": "The revised position, where it moved." },
+              "newObjection": { "type": "boolean", "description": "True where this was not in the position file. These are the ones worth folding back into negotiation/positions.json." }
+            }
+          }
+        }
+      }
+    },
+
+    "finalReport": {
+      "description": "Stage 8. The package that goes to leadership, finance, risk management and legal for final review — market test, comparator result, and the accumulated risk assessment from redlining.\n\nThis records that the review happened and what it was given, not the prose itself. The point is that no contract reaches signature without those four having seen the same three things.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preparedOn":  { "$ref": "#/$defs/dateOrBlank" },
+        "preparedBy":  { "type": "string" },
+        "includes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "marketTest":     { "type": "boolean" },
+            "comparison":     { "type": "boolean" },
+            "riskAssessment": { "type": "boolean" }
+          }
+        },
+        "reviewers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "function": { "enum": ["leadership", "finance", "risk", "legal", "client", "other"] },
+              "name":     { "type": "string" },
+              "date":     { "$ref": "#/$defs/dateOrBlank" },
+              "outcome":  { "enum": ["approved", "approved-with-comment", "returned", "pending"] },
+              "note":     { "type": "string" }
+            }
+          }
+        },
+        "openRisks": {
+          "type": "array",
+          "description": "Risks going to signature UNRESOLVED. Deliberately separate from deviations[]: a deviation that was accepted is closed, and this is what is knowingly being carried.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "glob": {
+      "description": "Analysis settings. Applies to every scenario so totals stay like-for-like.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "projectName":      { "type": "string", "description": "Label only; never affects a calculation." },
+        "windowStart":      { "$ref": "#/$defs/dateOrBlank", "description": "Comparison begins here. The current lease is assumed already in force on this date." },
+        "windowEnd":        { "$ref": "#/$defs/dateOrBlank", "description": "Comparison stops here. Payments after it are excluded from every scenario." },
+        "pvReferenceDate":  { "$ref": "#/$defs/dateOrBlank", "description": "Date future money is discounted back to. Defaults to windowStart." },
+        "discountRatePct":  { "$ref": "#/$defs/numberOrBlank", "description": "Annual cost of capital, whole percent. 0 compares undiscounted cash." },
+        "assumedCpiPct":    { "$ref": "#/$defs/numberOrBlank", "description": "Assumed annual inflation wherever a CPI escalator appears. An assumption, not a forecast." },
+        "baselineMode":     { "enum": ["continue", "expire"], "description": "What 'do nothing' means past the current lease's expiry." }
+      }
+    },
+
+    "current": {
+      "description": "The lease as it stands.",
+      "allOf": [{ "$ref": "#/$defs/leaseTerms" }],
+      "type": "object",
+      "properties": {
+        "baseRent":  { "$ref": "#/$defs/numberOrBlank", "description": "Rent PAYABLE AT windowStart, after every escalation that has already happened — not the original commencement rent." },
+        "rentBasis": { "enum": ["monthly", "annual"] }
+      }
+    },
+
+    "proposals": {
+      "description": "One entry per scenario being priced. Each runs on the current lease's terms until its effective date, then on its own.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/proposal" }
+    },
+
+    "site": {
+      "description": "Site identity. Feeds the amendment merge; never affects a calculation.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fan":      { "type": "string", "description": "Fixed asset number / site ID." },
+        "siteName": { "type": "string" },
+        "siteType": { "type": "string", "description": "e.g. tower, rooftop, ground, water tank." },
+        "sqft":     { "$ref": "#/$defs/numberOrBlank" },
+        "address":  {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "line1": { "type": "string" },
+            "city":  { "type": "string" },
+            "state": { "type": "string" },
+            "zip":   { "type": "string" }
+          }
+        },
+        "landlord": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name":    { "type": "string" },
+            "address": { "type": "string" }
+          }
+        },
+        "tenant": { "type": "string", "description": "Tenant entity as it should appear in the amendment." }
+      }
+    },
+
+    "documentChain": {
+      "description": "The original agreement and every amendment, in chronological order.\n\nstatedTitle and chronologicalOrdinal are SEPARATE because they disagree in practice — a document titled 'First Amendment' can be chronologically the second. Conflating them is how the wrong instrument gets referenced in a recital.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "additionalProperties": false,
+        "properties": {
+          "id":                   { "type": "string", "description": "Stable handle used by audit entries, e.g. 'original', 'amend-3'." },
+          "statedTitle":          { "type": "string", "description": "Exactly as the document titles itself." },
+          "chronologicalOrdinal": { "type": "integer", "minimum": 0, "description": "0 = original agreement, 1 = first by date, and so on." },
+          "date":                 { "$ref": "#/$defs/dateOrBlank" },
+          "documentType":         { "enum": ["Lease", "Sublease", "License", "Sublicense", ""] },
+          "sourceFile":           { "type": "string", "description": "Filename of the scan. The file itself is never tracked." }
+        }
+      }
+    },
+
+    "definedTerms": {
+      "description": "The capitalized terms the amendment relies on, each traced to where it was defined.\n\nProvenance is the point: the central drafting trap is redefining a term the base lease already defines, or using one it never defines. Recording definedIn/section makes that mechanically checkable instead of a careful human read.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "RentName":      { "$ref": "#/$defs/definedTerm", "description": "What rent is called: 'Rent', 'Monthly Rent', 'Lease Fee'." },
+        "TermName":      { "$ref": "#/$defs/definedTerm", "description": "'Term', 'Renewal Term', 'Extension Term'." },
+        "ExtensionName": { "$ref": "#/$defs/definedTerm" },
+        "AreaName":      { "$ref": "#/$defs/definedTerm", "description": "Usually 'Premises' — the area leased. Used undefined by several clauses; check it exists." },
+        "PropertyName":  { "$ref": "#/$defs/definedTerm", "description": "Usually 'Property' — the area the landlord controls. Also used undefined." },
+        "EquipmentName": { "$ref": "#/$defs/definedTerm", "description": "Usually 'Communication Facility'." },
+        "LandlordTitle": { "$ref": "#/$defs/definedTerm" },
+        "TenantTitle":   { "$ref": "#/$defs/definedTerm", "description": "What the tenant is called in this agreement." },
+        "DocumentType":  { "$ref": "#/$defs/definedTerm", "description": "Lease | Sublease | License | Sublicense. Drives the recital verb." },
+        "LeaseDocument": { "$ref": "#/$defs/definedTerm", "description": "What the base agreement is called." }
+      }
+    },
+
+    "sectionMap": {
+      "description": "Which section of the base agreement governs what. Amendment clauses say 'Section N is hereby deleted and replaced'; without this the number is filled in by hand and 'Section XX' can survive into an executed document.",
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "examples": [{ "term": "3", "rent": "4(a) and 4(b)", "defaultCure": "15", "termination": "20" }]
+    },
+
+    "term": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "commencementDate":   { "$ref": "#/$defs/dateOrBlank" },
+        "currentTermEnd":     { "$ref": "#/$defs/dateOrBlank", "description": "Last day of the term now running." },
+        "extensionTermStart": { "$ref": "#/$defs/dateOrBlank", "description": "Day after currentTermEnd, normally." },
+        "finalTermEnd":       { "$ref": "#/$defs/dateOrBlank", "description": "Last day if every remaining option is exercised. Distinct from currentTermEnd — the comparator's single termEnd cannot express both." },
+        "nnrNoticeDays":      { "type": "integer", "minimum": 0, "description": "NNR — notice of non-renewal. HOW MUCH NOTICE the lease requires around renewal, in days. This is the governing lease term; 180 is common. It is the primary NNR value: the deadline below is derived from it." },
+        "nnrDueDate":         { "$ref": "#/$defs/dateOrBlank", "description": "The deadline that falls out of nnrNoticeDays for the term now running — normally currentTermEnd minus nnrNoticeDays. Recorded rather than computed because a lease can measure the period from something other than the term end, and getting it wrong forfeits a renewal." }
+      }
+    },
+
+    "options": {
+      "description": "Unexercised renewal options. Lets baselineMode 'continue' be a real calculation rather than a proxy for 'keep charging current rent forever'.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "count":        { "type": "integer", "minimum": 0, "description": "How many remain." },
+          "lengthMonths": { "type": "integer", "minimum": 1, "description": "60 for a five-year option." },
+          "noticeDays":   { "type": "integer", "minimum": 0 },
+          "exercised":    { "type": "boolean", "default": false },
+          "automatic":    { "type": "boolean", "description": "True if renewal happens absent notice; false if it needs affirmative exercise." }
+        }
+      }
+    },
+
+    "rent": {
+      "description": "Rent has provenance, and the sources disagree. Record each figure with where it came from rather than collapsing to one number — the variance between them is itself an audit finding.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "chargeBasis": {
+          "description": "HOW the lease charges, which is an audit finding in its own right and governs how a market comparison may be built.\n\n  flat                  A stated rent. Square footage describes the premises; it is not a rate driver. THE COMMON CASE.\n  antenna_only          A rent plus a per-antenna charge, and nothing else.\n  antenna_and_microwave A rent plus per-antenna AND per-dish charges. Second most common.\n  full_manifest         An itemised per-unit schedule. Uncommon, and typically a restrictive tower-company licence.\n\nANTENNAS AND DISHES ARE PRICED SEPARATELY AND ARE NOT INTERCHANGEABLE. A panel antenna bands by weight and runs about $90/month at the Tier 2 baseline; a microwave dish bands by diameter and runs $225 at 2ft to $1,200 at 8ft. `antenna_only` exists because a lease that charges per antenna and says nothing about dishes is common, and pricing it on the antenna_and_microwave basis adds dish adders the lease does not charge for — on a site with one 6ft dish that is $800/month of indicated rent that no landlord could ever invoice.\n\nWHY IT MATTERS FOR PRICING: an indicated market rent must be built on the same basis the lease charges on. Adding equipment adders and a separate space charge to a flat-rent lease inflates the indicated figure and can make an above-market lease look in-band.\n\nWHY IT MATTERS IN NEGOTIATION: the basis is itself a term. A landlord introducing per-unit charges on a flat-rent lease is asking for a structural change, not a rent increase, and every future equipment addition then carries a cost. Moving a lease from antenna_only to antenna_and_microwave is the same kind of change, one category smaller.",
+          "enum": ["flat", "antenna_only", "antenna_and_microwave", "full_manifest", ""]
+        },
+        "figures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source"],
+            "additionalProperties": false,
+            "properties": {
+              "amount": { "$ref": "#/$defs/numberOrBlank" },
+              "basis":  { "enum": ["monthly", "annual"] },
+              "source": { "enum": ["audited", "offered", "negotiated", "books"], "description": "audited = read from the documents; offered = the letter or proposal; negotiated = agreed in discussion; books = the payables system." },
+              "asOf":   { "$ref": "#/$defs/dateOrBlank" },
+              "note":   { "type": "string" }
+            }
+          }
+        },
+        "reconciled": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "amount": { "$ref": "#/$defs/numberOrBlank" },
+            "basis":  { "enum": ["monthly", "annual"] },
+            "note":   { "type": "string", "description": "Why this figure was chosen over the others." }
+          }
+        }
+      }
+    },
+
+    "history": {
+      "description": "The site's story, from the documents and (if it ever arrives) from the payment record.\n\nTHE SPLIT IS DELIBERATE AND LOAD-BEARING. `rentSchedule` is CONTRACTUAL — what the documents say should have been payable. `payments` is ACTUAL — what the client's records say was paid. They are separate arrays because they are separate claims from separate sources with different reliability, and because the payment record may never arrive.\n\nMerging them into one timeline would make over/under-payment analysis a rewrite rather than an addition. Kept apart, that analysis is: run the engine over rentSchedule to get expected payments, diff against payments, done.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+
+        "rentSchedule": {
+          "description": "What the documents say was payable, period by period, from commencement to now. This is the 'amendment perspective' of the history: every row names the instrument that set it.\n\nBuild it forward from the original lease, applying each amendment and escalation in turn. Where it disagrees with what the client believes the rent is, that disagreement is a finding — see rent.figures[].",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from"],
+            "additionalProperties": false,
+            "properties": {
+              "from":        { "$ref": "#/$defs/dateOrBlank" },
+              "to":          { "$ref": "#/$defs/dateOrBlank", "description": "Blank on the final row — it runs to the present." },
+              "monthlyRent": { "$ref": "#/$defs/numberOrBlank", "description": "Always monthly, whatever the document states. Annual figures are divided by twelve here, once, so nothing downstream has to." },
+              "setBy":       { "type": "string", "description": "documentChain id of the instrument that set this rent." },
+              "setBySection":{ "type": "string" },
+              "reason":      { "enum": ["commencement", "escalation", "amendment", "option-exercise", "equipment-modification", "holdover", "other"] },
+              "derivation": {
+                "enum": ["stated", "computed"],
+                "description": "THE MOST IMPORTANT FIELD IN THIS BLOCK. `stated` means the figure appears in the document. `computed` means it was derived by applying an escalator across time.\n\nA computed figure inherits every assumption in the derivation — the escalator rate, its compounding, the anniversary date, whether a step was ever actually invoiced. Eight years of 3% compounding turns a small error at the start into a large one now. Any over/under-payment work must treat the two differently, and a variance against a computed figure is far weaker evidence than one against a stated figure."
+              },
+              "note":        { "type": "string" }
+            }
+          }
+        },
+
+        "payments": {
+          "description": "What was ACTUALLY paid, from the client's records. OPTIONAL, and frequently unavailable — plan for it never arriving.\n\nNothing else in the toolkit depends on this being present. Its absence must never block an audit; it only means the over/under-payment question stays unanswered rather than answered 'no'.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "date":    { "$ref": "#/$defs/dateOrBlank", "description": "When it was paid, not the period it covers." },
+              "amount":  { "$ref": "#/$defs/numberOrBlank" },
+              "covers":  { "type": "string", "description": "The period the payment was for, as the remittance describes it. Free text on purpose — remittance detail is rarely structured." },
+              "source":  { "enum": ["client-ledger", "bank-record", "invoice", "landlord-statement", "other", ""] },
+              "note":    { "type": "string" }
+            }
+          }
+        },
+
+        "reconciliation": {
+          "description": "NOT BUILT YET, and deliberately shaped rather than left undefined so that building it is an addition.\n\nWhen it is built, the method is fixed: run src/lease-engine.js over rentSchedule to produce the expected payment schedule, then diff against payments[]. THE SAME ENGINE THAT PRICES PROPOSALS PRODUCES THE EXPECTED SCHEDULE — there must not be a second implementation of escalation and proration for the historical side, or the two will disagree and the disagreement will be mistaken for a variance.\n\nThis block caches a result; it is not the source of truth for either input.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "asOf":     { "$ref": "#/$defs/dateOrBlank" },
+            "method":   { "type": "string", "description": "How expected was derived, including which convention and payment-day rule were assumed. A variance is meaningless without it." },
+            "note":     { "type": "string", "description": "Free text, and it carries the part that does not fit anywhere else: WHY the reconciliation is incomplete.\n\nA complete reconciliation is often impossible. The payment record arrives with gaps, or the ledger and the invoices disagree, or a period is covered by an instrument nobody can produce. That is the normal case rather than the exception, and it has to be preserved — a reconciliation reported as 'done' when half of it was unverifiable is worse than one that says where it stopped and what blocked it.\n\nThe counts in `summary` say how much is unexplained. This says why, and what it would take to close." },
+            "variances": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "period":   { "type": "string" },
+                  "expected": { "$ref": "#/$defs/numberOrBlank" },
+                  "actual":   { "$ref": "#/$defs/numberOrBlank" },
+                  "variance": { "$ref": "#/$defs/numberOrBlank", "description": "actual minus expected. Positive means overpaid." },
+                  "confidence": { "enum": ["stated", "computed", "unknown"], "description": "Carried through from the rentSchedule row the expectation came from. A variance against a computed figure is a question, not a finding." },
+                  "note":     { "type": "string" }
+                }
+              }
+            },
+            "summary": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "netVariance":       { "$ref": "#/$defs/numberOrBlank" },
+                "periodsCovered":    { "type": "integer", "minimum": 0 },
+                "periodsUnexplained":{ "type": "integer", "minimum": 0, "description": "Periods with no payment record at all. Distinct from a zero variance — absence of evidence." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "equipment": {
+      "description": "Installed unit counts. OPTIONAL, and absent for most leases — only a full_manifest lease charges per unit, and only an antenna_and_microwave lease charges for some of them. On a flat-rent lease this may still be worth recording as an inventory, but it does NOT feed the rent build-up. See rent.chargeBasis.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "item":  { "type": "string", "description": "Matches a row in market/equipment-adders.csv." },
+          "count": { "type": "integer", "minimum": 0 },
+          "note":  { "type": "string" }
+        }
+      }
+    },
+
+    "marketBenchmark": {
+      "description": "Result of testing the in-place rent against the market schedule. Carried on the deal so the audit conclusion travels with it.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "metro":               { "type": "string" },
+        "tier":                { "type": "string", "examples": ["Tier 2 - Major metro"] },
+        "tierMultiplier":      { "$ref": "#/$defs/numberOrBlank" },
+        "indicatedMonthly":    { "$ref": "#/$defs/numberOrBlank", "description": "Build-up from the rate builder." },
+        "contractVsIndicated": { "$ref": "#/$defs/numberOrBlank", "description": "Ratio. 1.00 is at market." },
+        "flag":                { "enum": ["above", "in_band", "below", ""], "description": "Thresholds are deliberately wide (1.25x / 0.80x); site dispersion makes anything tighter flag noise." },
+        "asOf":                { "$ref": "#/$defs/dateOrBlank" }
+      }
+    },
+
+    "audit": {
+      "description": "Audit findings, keyed by term id.\n\nDELIBERATELY OPEN. The audit phase is not yet designed and will grow to cover most standard telecom lease terms, so this schema fixes only the SHAPE of an entry, never the list of terms. docs/audit-terms.md holds the registry; an id absent from it warns rather than errors, so the inventory can grow without a schema bump.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "auditedOn": { "$ref": "#/$defs/dateOrBlank" },
+        "auditedBy": { "type": "string", "description": "Who or what performed it — a person, or the agent, with the reviewing human named alongside." },
+        "reviewedBy": { "type": "string", "description": "The human who checked the audit. An agent-produced audit is not finished until someone has read it." },
+        "sources": {
+          "description": "What the audit was performed against. Filenames and record identifiers only — never content, and never a path that leaks a client name.\n\nInput is PDFs, sometimes with database records alongside. DATABASE ACCESS DOES NOT EXIST YET; when it does, records join this list as a corroborating source rather than replacing anything. An audit performed from documents alone is complete, not provisional — the database confirms or contradicts, it does not supply what the documents already say.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "enum": ["original-lease", "amendment", "assignment", "memorandum", "snda", "estoppel", "correspondence", "database-record", "other"] },
+              "ref":  { "type": "string", "description": "Filename, document id, or database key." },
+              "extraction": {
+                "enum": ["text", "ocr", "manual", "mixed", "unavailable"],
+                "description": "How the content was obtained. `text` is an embedded text layer. `ocr` is a scan, and everything read from it deserves lower confidence — a poor scan is where an agent is most likely to produce a plausible wrong reading. `unavailable` means the document is referenced in the chain but was not supplied, which is a finding in itself."
+              },
+              "pages":      { "type": "integer", "minimum": 0 },
+              "legibility": { "enum": ["clean", "degraded", "partly-illegible", ""], "description": "Set honestly. It tells the reviewer where to look hardest." },
+              "note": { "type": "string" }
+            }
+          }
+        },
+
+        "triage": {
+          "description": "THE AUDIT'S FIRST JOB, and the gate on everything downstream. A site with fair financials and clean terms should stop here — most should. Recording the decision matters as much as recording the terms: it is the difference between 'we looked and passed' and 'we never looked'.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "financials": {
+              "enum": ["above-market", "at-market", "below-market", "unknown"],
+              "description": "The audit's PRELIMINARY read. The market test (stage 2) confirms or overturns it and writes marketBenchmark.flag; where the two disagree, the market test wins and the disagreement is itself worth noting."
+            },
+            "terms": {
+              "enum": ["problematic", "acceptable", "unknown"],
+              "description": "Whether anything in the rights, term or restrictions warrants action independently of rent. A lease can be at market and still worth amending."
+            },
+            "recommendation": {
+              "enum": ["pursue", "monitor", "no-action"],
+              "description": "monitor means nothing now but something later — usually an NNR date or an option deadline approaching."
+            },
+            "rationale": { "type": "string", "description": "Why. A recommendation with no reasoning cannot be reviewed." }
+          }
+        },
+
+        "terms": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z0-9]+(-[a-z0-9]+)*(\\.[a-z0-9]+(-[a-z0-9]+)*)*$" },
+          "additionalProperties": { "$ref": "#/$defs/auditTerm" }
+        },
+
+        "termsAnalysis": {
+          "description": "The terms case, built by comparing what the lease actually contains against the clause library and its tenant-benefit scores.\n\nTHE GAP IS THE CASE. A lease missing three clauses scored +3 is worth pursuing on terms even where the rent is at market — which is why audit.triage.terms is independent of audit.triage.financials.\n\nScores follow the library's fixed sign convention — see tenantBenefitScale in clauses.json.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "findings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["clauseId", "state"],
+                "additionalProperties": false,
+                "properties": {
+                  "clauseId": { "type": "string", "description": "The library clause this is measured against." },
+                  "state": {
+                    "enum": ["absent", "present-weaker", "present-equivalent", "present-better", "unclear"],
+                    "description": "How the lease compares to the library position.\n\n  absent              nothing addresses it — the full benefit score is on the table\n  present-weaker      addressed, but on worse terms than the library\n  present-equivalent  no case here\n  present-better      the lease is BETTER than the library. Say so: it is a clause to protect in redlining, and possibly one the library should learn from\n  unclear             the document is ambiguous. A finding, not a blank"
+                  },
+                  "documentRef": { "type": "string", "description": "documentChain id where the existing provision sits, if any." },
+                  "sectionRef":  { "type": "string" },
+                  "summary":     { "type": "string", "description": "What the lease says now." },
+                  "gap":         { "type": "integer", "minimum": -3, "maximum": 3, "description": "Benefit available by moving to the library position. Normally the clause's tenantBenefit when absent, less where the lease is already partway there. Negative where the lease is better than the library." },
+                  "priority":    { "enum": ["must-have", "should-have", "nice-to-have", "do-not-raise"], "description": "The score is a starting point; this is the judgement after site facts. 'do-not-raise' matters — some gaps are better left closed, because raising them invites the landlord to reopen something settled." },
+                  "note":        { "type": "string" }
+                }
+              }
+            },
+            "summary": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "criticalGaps":  { "type": "integer", "minimum": 0, "description": "Findings where a clause scored 3 is absent or materially weaker." },
+                "totalGap":      { "type": "integer", "description": "Sum of gap across findings. A blunt number — useful for ranking a portfolio, not for deciding a single site." },
+                "leaseIsBetter": { "type": "integer", "minimum": 0, "description": "Count of present-better findings. Worth surfacing: these are provisions to defend, not improve." }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "clauseSelection": {
+      "description": "Which clause variants this amendment uses. Checked against clauses.json for conflicts and unmet requirements.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clauseId"],
+        "additionalProperties": false,
+        "properties": {
+          "clauseId":      { "type": "string" },
+          "targetSection": { "type": "string", "description": "The section this clause replaces, resolved from sectionMap." },
+          "note":          { "type": "string" }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+
+    "dateOrBlank": {
+      "description": "yyyy-mm-dd, or empty meaning 'inherit / not established'. Calendar validity is checked by the validator, not the pattern: Date.UTC silently rolls 2027-13-45 over into a real but wrong date.",
+      "type": "string",
+      "pattern": "^$|^\\d{4}-\\d{2}-\\d{2}$"
+    },
+
+    "numberOrBlank": {
+      "description": "A number, or empty meaning 'not set'. Strings are accepted because form inputs produce them.",
+      "anyOf": [
+        { "type": "number" },
+        { "type": "string", "pattern": "^$|^-?\\d*\\.?\\d+$" }
+      ]
+    },
+
+    "definedTerm": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value":        { "type": "string", "description": "The term as actually used, e.g. 'Lease Fee'." },
+        "definedIn":    { "type": "string", "description": "documentChain id where it is defined, or empty if never defined." },
+        "section":      { "type": "string" },
+        "redefinedHere":{ "type": "boolean", "default": false, "description": "True if this amendment redefines it. Redefining an existing term is the drafting trap this field exists to surface." },
+        "note":         { "type": "string" }
+      }
+    },
+
+    "auditTerm": {
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": false,
+      "properties": {
+        "value":       { "type": "string", "description": "What the documents say, in plain language." },
+        "status":      { "enum": ["found", "absent", "ambiguous"], "description": "absent and ambiguous are findings in their own right — a clause that requires an absent term cannot be used as drafted." },
+        "source":      { "enum": ["audited", "offered", "negotiated", "books", ""] },
+        "documentRef": { "type": "string", "description": "documentChain id." },
+        "sectionRef":  { "type": "string" },
+        "confidence": {
+          "enum": ["high", "medium", "low"],
+          "description": "How reliably this was READ, which is separate from how clearly the lease states it.\n\n  high    clean text, unambiguous wording\n  medium  legible but the wording needs interpretation, or it sits across several provisions\n  low     read from a degraded scan, a partly-illegible page, or an exhibit that may be incomplete\n\nThis exists because the audit is performed by an agent reading PDFs, and a poor scan is exactly where a confident wrong reading gets produced. `low` is not a failure — it is an instruction to the human reviewer about where to look."
+        },
+        "verbatim": {
+          "type": "string",
+          "description": "The exact words the finding was read from, so a reviewer can check it without reopening the document. CLIENT CONTENT — this is one of the fields that makes a deal file confidential, and it must never reach the repository. Fixtures carry invented text only."
+        },
+        "notes":       { "type": "string" }
+      }
+    },
+
+    "escalator": {
+      "description": "One escalation regime. Multiple rows describe a lease that changes formula partway through (3% fixed for ten years, CPI thereafter).\n\nCADENCE 0 IS A ONE-TIME STEP applied once on firstAdjustment and never repeated. With type fixed_amount that is how a permanent mid-term rent change — an equipment addition — is expressed.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "appliesFrom":     { "$ref": "#/$defs/dateOrBlank", "description": "Start of the stretch this clause governs. NOT the date of the first increase." },
+        "appliesTo":       { "$ref": "#/$defs/dateOrBlank", "description": "End of that stretch. Adjustments stop after it." },
+        "type":            { "enum": ["fixed_pct", "fixed_amount", "cpi", "none"], "description": "'none' disables the row entirely while keeping its values." },
+        "ratePct":         { "$ref": "#/$defs/numberOrBlank", "description": "Percent for fixed_pct (3 means 3%); DOLLARS PER MONTH for fixed_amount. Ignored for cpi." },
+        "cadenceMonths":   { "$ref": "#/$defs/numberOrBlank", "description": "Months between adjustments. 12 annual, 60 five-yearly, 0 one-time step." },
+        "firstAdjustment": { "$ref": "#/$defs/dateOrBlank", "description": "Date the first increase takes effect; sets the day and month of every later step." },
+        "compounding":     { "enum": ["on_prior", "on_base"], "description": "on_prior: each increase applies to rent then in force (usual reading). on_base: to the rent at the start of this escalator." },
+        "floorPctIn":      { "$ref": "#/$defs/numberOrBlank", "description": "CPI only. Minimum increase per adjustment." },
+        "capPctIn":        { "$ref": "#/$defs/numberOrBlank", "description": "CPI only. Maximum increase per adjustment." }
+      }
+    },
+
+    "oneTimePayment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label":     { "type": "string" },
+        "date":      { "$ref": "#/$defs/dateOrBlank" },
+        "amount":    { "$ref": "#/$defs/numberOrBlank", "description": "Gross, entered POSITIVE. Direction sets the sign." },
+        "direction": { "enum": ["to_landlord", "to_tenant"], "description": "to_landlord adds to scenario cost; to_tenant subtracts." }
+      }
+    },
+
+    "leaseTerms": {
+      "description": "Payment mechanics shared by the current lease and every proposal.",
+      "type": "object",
+      "properties": {
+        "termEnd":              { "$ref": "#/$defs/dateOrBlank", "description": "LAST DAY OF OCCUPANCY as the document states it — not the day after." },
+        "cadenceMonths":        { "$ref": "#/$defs/numberOrBlank", "description": "How often rent is INVOICED: 1, 3, 6 or 12. Independent of how often it escalates." },
+        "firstPaymentDate":     { "$ref": "#/$defs/dateOrBlank", "description": "ANY payment date in the cycle — a phase marker, not necessarily the first. Blank anchors on the period start." },
+        "paymentTiming":        { "enum": ["advance", "arrears"] },
+        "prorationBasis":       { "enum": ["prorated", "full_period", "prorated_start_only"] },
+        "prorationConvention":  { "enum": ["actual_month", "actual_365", "thirty_360"], "description": "Day-count used whenever a period is prorated. Where the lease is silent, run the alternatives and report the range." },
+        "paymentDayRule": {
+          "enum": ["anchored", "last_day", "clamped"],
+          "default": "anchored",
+          "description": "What happens when the payment day does not exist in a month — rent due the 31st, in February.\n\nanchored: clamp only in the short month, then return to the nominal day (Jan 31 > Feb 28 > Mar 31). The default.\nlast_day: always the month's last day.\nclamped: LEGACY. Once a short month clamps the day it never recovers (Jan 31 > Feb 28 > Mar 28 > Apr 28). Reproduces pre-fix behaviour; not a lease convention."
+        },
+        "escalators":       { "type": "array", "items": { "$ref": "#/$defs/escalator" } },
+        "oneTimePayments":  { "type": "array", "items": { "$ref": "#/$defs/oneTimePayment" } }
+      }
+    },
+
+    "proposal": {
+      "allOf": [{ "$ref": "#/$defs/leaseTerms" }],
+      "type": "object",
+      "properties": {
+        "id":            { "type": "string" },
+        "label":         { "type": "string" },
+        "effectiveDate": { "$ref": "#/$defs/dateOrBlank", "description": "Date the amendment takes effect. Before it this scenario runs on the current lease's terms." },
+        "rentMode":      { "enum": ["absolute", "pct_of_current", "delta_from_current", "unchanged"], "description": "pct_of_current: 85 is a 15% cut of the then-escalated rent." },
+        "rentValue":     { "$ref": "#/$defs/numberOrBlank" },
+        "rentBasis":     { "enum": ["monthly", "annual"], "description": "Applies to absolute pricing only; relative modes always work from the then-current monthly rent." }
+      }
+    }
+  }
+}
