@@ -19,25 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-NOT LEGAL ADVICE, AND NOT A VALUATION
-
-This repository contains contract drafting and market rate data. Both are
-covered by the disclaimer above:
-
-  The clause library is UNREVIEWED DRAFTING. Every clause is composed from
-  published market practice. None of it has been used in an executed document
-  and none of it has been reviewed by counsel. It is scaffolding that makes an
-  amendment buildable. Have a lawyer read anything before it reaches a
-  counterparty.
-
-  The market rate file is ILLUSTRATIVE derived from public information. It is 
-  a small set of published figures, shipped so the tools run out of the box.
-
-  The checks are MECHANICAL. A clean redline run means no pattern the tool
-  knows about fired; it cannot read a sentence and tell you an obligation now
-  runs the wrong way.
-
-Nothing here creates a lawyer-client relationship.

@@ -13,7 +13,8 @@ the browser's own `DecompressionStream`.
 `negotiation-playbook` turns the audit and the pricing into a position. The rest are browser tools.
 
 > **The clause library is unreviewed drafting and the market data is illustrative.** Both are
-> scaffolding that makes the tools runnable, not house positions. See [LICENSE](LICENSE).
+> scaffolding that makes the tools runnable, not house positions. See
+> [Not legal advice, and not a valuation](#not-legal-advice-and-not-a-valuation) below.
 
 ## The pipeline
 
@@ -367,6 +368,24 @@ Every stage of the pipeline has tooling. **152 tests**, four checks, all passing
 
 Failure modes seen in real amendment templates, and how the tooling designs them out, are in
 [docs/drafting-traps.md](docs/drafting-traps.md).
+
+## Not legal advice, and not a valuation
+
+This repository contains contract drafting and market rate data. Both are covered by the warranty
+disclaimer in [LICENSE](LICENSE), and three things are worth stating plainly on their own:
+
+**The clause library is unreviewed drafting.** Every clause is composed from published market
+practice. None of it has been used in an executed document and none of it has been reviewed by
+counsel. It is scaffolding that makes an amendment buildable. Have a lawyer read anything before it
+reaches a counterparty.
+
+**The market rate file is illustrative**, derived from public information. It is a small set of
+published figures, shipped so the tools run out of the box.
+
+**The checks are mechanical.** A clean redline run means no pattern the tool knows about fired; it
+cannot read a sentence and tell you an obligation now runs the wrong way.
+
+Nothing here creates a lawyer-client relationship.
 
 ## Contributing
 
